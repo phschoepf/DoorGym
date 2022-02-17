@@ -79,6 +79,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             low, high = low[:-gripper_space], high[:-gripper_space] # four joints for finger is a dependant of finger inertial joint
             self.action_space = spaces.Box(low=low, high=high, dtype=np.float32)
             self.gripper_action = self.sim.data.qpos[-gripper_space:]
+        self.remote = None
         self.init_done = True
         self.model_origin = self.model
 
@@ -101,7 +102,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             self.no_viewer = False
 
         reward_dist = -np.linalg.norm(self.get_dist_vec())
-        reward_log_dist = -np.log(np.square(np.linalg.norm(reward_dist))+5e-3) - 5.0 
+        reward_log_dist = -np.log(np.square(np.linalg.norm(reward_dist))+5e-3) - 5.0
         reward_ori = - np.linalg.norm(self.get_ori_diff_no_xaxis())
         reward_door = abs(self.sim.data.get_joint_qpos("hinge0")) *30 #*30
 
@@ -149,7 +150,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         if property_DR:
             if self.init_done:
                 self.randomized_property()
-            
+
         # self.hooked = True
         hooked_chance = np.random.randint(100)
         untucked_chance = np.random.randint(100)
@@ -315,17 +316,17 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                     offset_to_hook = np.array([0.13,0.0,0.0])
                 elif self.xml_path.find("round")>-1:
                     goal_in_xyz = self.sim.data.get_geom_xpos("door_knob_2") - robot_origin
-                    offset_to_hook = np.array([0.0,0.0,0.0]) 
+                    offset_to_hook = np.array([0.0,0.0,0.0])
                 elif self.xml_path.find("pull")>-1:
                     goal_in_xyz = self.sim.data.get_geom_xpos("door_knob_7") - robot_origin
-                    offset_to_hook = np.array([0.13,0.0,0.0]) 
+                    offset_to_hook = np.array([0.13,0.0,0.0])
                 else:
                     assert "not sure about the door knob type"
 
                 if self.xml_path.find("hook")>-1:
                     offset_to_hook_randomness = np.array([np.random.uniform(-0.01,0.01), np.random.uniform(-0.005,0.005), np.random.uniform(-0.06,0.06)])
                     hand_init_pos_3D = goal_in_xyz + offset_to_hook + offset_to_hook_randomness
-                
+
                     hand_ori_random = self.np_random.uniform(low=-0.05, high=0.05, size=3)
                     wrist_dir_chance = np.random.randint(100)
                     if wrist_dir_chance>=50:
@@ -337,7 +338,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 if self.xml_path.find("gripper")>-1:
                     offset_to_hook_randomness = np.array([0.0, 0.0, np.random.uniform(-0.06,0.06)])
                     hand_init_pos_3D = goal_in_xyz + offset_to_hook + offset_to_hook_randomness
-                
+
                     hand_ori_random = self.np_random.uniform(low=-0.01, high=0.01, size=3)
                     wrist_dir_chance = np.random.randint(100)
                     if wrist_dir_chance>=50:
@@ -346,9 +347,9 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                         hand_ori_random[-1] = np.random.uniform(3.13,3.14)
                     qpos[:self.nn-1] = np.concatenate((hand_init_pos_3D,hand_ori_random))
                     qpos[0] -= 0.02
-                    qpos[self.nn: self.nn+4] = np.array([1.0,-1.0,1.0,-1.0]) 
-            
-                qvel = self.init_qvel 
+                    qpos[self.nn: self.nn+4] = np.array([1.0,-1.0,1.0,-1.0])
+
+                qvel = self.init_qvel
                 self.set_state(qpos, qvel)
 
         if self.unity:
@@ -364,8 +365,8 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             return np.concatenate([
                 self.get_robot_joints(),
                 self.get_finger_target(), # if knob dist from img
-                self.get_flatten_img(cam_num=1), 
-                self.get_flatten_img(cam_num=2) 
+                self.get_flatten_img(cam_num=1),
+                self.get_flatten_img(cam_num=2)
                 ])
         else:
             # print("qpos", self.sim.data.qpos)
@@ -385,9 +386,9 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             except:
                 print("connect waiting")
                 time.sleep(1)
-    
+
     def disconnet_to_unity(self):
-        self.remote.close()
+        if self.remote is not None: self.remote.close()
 
     def unity_init(self, port):
         print("making unity remote connecting to {}".format(port))
@@ -395,7 +396,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.remote = mjremote()
         self.change_model(self.xml_path)
         self.remote.setcamera(0)
-      
+
     def change_model(self, full_path):
         print('Setting world in unity')
         # print("full path", full_path)
@@ -416,7 +417,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.world = random.choice(os.listdir(world_path))
         print("world:", self.world)
         xml_path = os.path.join(world_path, self.world)
-        return xml_path       
+        return xml_path
 
     def normalizer(self, img):
         mean = [0.5, 0.5, 0.5]
@@ -507,7 +508,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 return quat2euler(self.sim.data.get_body_xquat("right_wrist"))
         else:
             assert "not sure about the end-effector type"
-    
+
     def get_finger_quat(self):
         if self.xml_path.find("blue")>-1:
             if self.xml_path.find("hook")>-1:
@@ -536,7 +537,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # higher reward if hook is heading in right direction 
         if vec[1]>=0: #hand on right side of knob (y-axis). hook x-axis has to be 0
             reward_hookdir = 1.57 - xaxis
-        else: 
+        else:
             reward_hookdir = xaxis - 1.57
         return reward_hookdir
 
@@ -562,4 +563,4 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             if isinstance(value, np.ndarray):
                 getattr(self.viewer.cam, key)[:] = value
             else:
-                setattr(self.viewer.cam, key, value)  
+                setattr(self.viewer.cam, key, value)

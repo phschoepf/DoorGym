@@ -136,5 +136,5 @@ dependencies:
     - wrapt==1.11.2
     - zipp==0.6.0
     - zmq==0.0.0
-prefix: /u/home/urakamiy/miniconda3/envs/doorgym
+prefix: ~/anaconda3/envs/doorgym
 
