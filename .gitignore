@@ -118,3 +118,5 @@ MUJOCO_LOG.TXT
 logs/
 trained_models/
 params_logs/
+
+.idea/
