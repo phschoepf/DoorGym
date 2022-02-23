@@ -243,7 +243,7 @@ def offpolicy_inference(
     import time 
     from gym import wrappers
 
-    print("evaluatin started!")
+    print("evaluation started!")
 
     filename = str(uuid.uuid4())
 
