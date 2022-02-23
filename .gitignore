@@ -120,3 +120,5 @@ trained_models/
 params_logs/
 
 .idea/
+world_generator/door/
+world_generator/world/
