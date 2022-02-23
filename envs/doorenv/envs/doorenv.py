@@ -93,6 +93,9 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.unity_init(self.port + rank%8)
         self.change_model(self.xml_path)
 
+    def get_doorangle(self):
+        return self.sim.data.get_joint_qpos("hinge0")
+
     def step(self, a):
         # print("step")
         if not self.unity and self.no_viewer:
