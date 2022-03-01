@@ -93,9 +93,6 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.unity_init(self.port + rank%8)
         self.change_model(self.xml_path)
 
-    def get_doorangle(self):
-        return self.sim.data.get_joint_qpos("hinge0")
-
     def step(self, a):
         # print("step")
         if not self.unity and self.no_viewer:
@@ -391,7 +388,8 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 time.sleep(1)
 
     def disconnet_to_unity(self):
-        if self.remote is not None: self.remote.close()
+        if hasattr(self,'remote'):
+            self.remote.close()
 
     def unity_init(self, port):
         print("making unity remote connecting to {}".format(port))
@@ -451,6 +449,9 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         img = np.transpose(img, (2,0,1))
         img = np.reshape(img, (3*self.imgsize_h*self.imgsize_w))
         return img
+
+    def get_doorangle(self):
+        return self.sim.data.get_joint_qpos("hinge0")
 
     def get_robot_joints(self):
         if self.xml_path.find("baxter")>-1:
