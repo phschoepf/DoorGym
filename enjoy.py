@@ -403,7 +403,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--world-path',
         type=str,
-        default="/u/home/urakamiy/pytorch-a2c-ppo-acktr-gail/random_world/world/pull_floatinghook",
+        default=os.path.join(os.getcwd(), "world_generator/world/pull_blue_floatinghook"),
         help='load the vision network model')
     parser.add_argument(
         '--pos-control',
@@ -452,4 +452,4 @@ if __name__ == "__main__":
             pos_control=args.pos_control,
             step_skip=args.step_skip)
     else:
-        raise "not sure which type of algorithm."
+        raise RuntimeError("not sure which type of algorithm.")
