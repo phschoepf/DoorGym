@@ -472,7 +472,7 @@ def main(dataset_file):
 
     contact_list = []
     # contact_list = [doorstopper_contact]
-    if knob_type != "pull":
+    if knob_type in ["lever", "round", "slider"]:
         contact_list.extend(latch_contacts)
     contact.add_children(contact_list)
 
@@ -669,7 +669,7 @@ def main(dataset_file):
             limited="true",
             range=ranges[i]))
 
-    if knob_type != "pull":
+    if knob_type in ["lever", "round"]:
         body3_joints.append(e.Joint(
             name='hinge1',
             type='hinge',
@@ -680,6 +680,19 @@ def main(dataset_file):
             frictionloss=knob_door_frictionloss,
             limited=knob_door_limited,
             range=knob_door_range,
+            pos=knob_door_joint_pos))
+
+    if knob_type == "slider":
+        body3_joints.append(e.Joint(
+            name='slide1',
+            type='slide',
+            axis=[0, 1, 0],
+            armature=knob_door_armature,
+            stiffness=knob_door_spring,
+            damping=knob_door_damper,
+            frictionloss=knob_door_frictionloss,
+            limited=knob_door_limited,
+            range=[0, 0.1],
             pos=knob_door_joint_pos))
 
     body3_inertial = e.Inertial(
@@ -702,8 +715,10 @@ def main(dataset_file):
             material=doorknob_material,
             mesh=mesh.format(i),
             euler=knob_euler,
-            friction=knob_surface_friction))    
-    if knob_type != "pull":
+            friction=knob_surface_friction))
+    if knob_type in ["lever", "round", "slider"]:
+        # generate the latch
+
         # if door_front_frame:
         #     pos_=[-(latch_gap/2.0+door_thickness*2.1), 0, 0]
         # else:
@@ -723,7 +738,7 @@ def main(dataset_file):
         diaginertia=knob_diaginertia)
 
     body4_children_list = body4_geoms 
-    if knob_type != "pull":
+    if knob_type in ["lever", "round", "slider"]:
         body4_children_list.extend([body4_inertial])
     body4.add_children(body4_children_list)
     
@@ -768,14 +783,14 @@ if __name__ == '__main__':
 
     # Generate the ordered knob if argument for "knob_type"
     if args.knob_type:
-        assert args.knob_type in ['lever', 'round', 'pull']
+        assert args.knob_type in ['lever', 'round', 'pull', 'slider']
         knob_type = args.knob_type
         pbar = tqdm(os.listdir(args.input_dirname.format(args.knob_type)))
         for dataset_file in pbar:
             main(dataset_file)
     # Generate all type of knob if no argument for "knob_type"
     else:
-        knob_types = ['lever','round','pull']
+        knob_types = ['lever','round','pull', 'slider']
         for knob_type in knob_types:
             print("Generating knob:type:{}".format(knob_type))
             pbar = tqdm(os.listdir(args.input_dirname.format(knob_type)))

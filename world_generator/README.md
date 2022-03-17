@@ -21,13 +21,13 @@
 
 ## Arguments
 
-| name          | options       | default   | explaination   |
-| ------------- |-------------| --------| -------------|
-| knob-type     | "lever", "round" or "pull" | ' ' |If no arg, it use all types.|
-| robot-type    | "gripper","hook","floatinghook","floatinggripper", "mobile_gripper" or "mobile_hook"   | 'floatinghook' | - |
-| one-dir       | True/False      | False | Save everything into one dir, or save into separate dir by its robot and knob types|
-| pulldoor-ratio       | 0.0~1.0  |   1.0 | ratio of door that opens by pulling. |
-| righthinge-ratio     | 0.0~1.0  |   1.0 | ratio of door that has hinge on right side. |
+| name             | options                                                                              | default        | explaination                                                                        |
+|------------------|--------------------------------------------------------------------------------------|----------------|-------------------------------------------------------------------------------------|
+| knob-type        | "lever", "round", "pull" or "slider" (Slider is WIP)                                 | ' '            | If no arg, it use all types.                                                        |
+| robot-type       | "gripper","hook","floatinghook","floatinggripper", "mobile_gripper" or "mobile_hook" | 'floatinghook' | -                                                                                   |
+| one-dir          | True/False                                                                           | False          | Save everything into one dir, or save into separate dir by its robot and knob types |
+| pulldoor-ratio   | 0.0~1.0                                                                              | 1.0            | ratio of door that opens by pulling.                                                |
+| righthinge-ratio | 0.0~1.0                                                                              | 1.0            | ratio of door that has hinge on right side.                                         |
 
 # Reference
 This mjcf generator is powered by the following repo.
