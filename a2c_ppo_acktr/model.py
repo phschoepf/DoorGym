@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from copy import copy
 import matplotlib.pyplot as plt
 from torch.nn.parameter import Parameter
+from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork, TargetNetwork
 
 from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
 from a2c_ppo_acktr.utils import init
@@ -25,7 +26,7 @@ class Policy(nn.Module):
             if len(obs_shape) == 3:
                 base = CNNBase
             elif len(obs_shape) == 1:
-                base = MLPBase
+                base = HNBase
             else:
                 raise NotImplementedError
 
@@ -220,5 +221,69 @@ class MLPBase(NNBase):
 
         hidden_critic = self.critic(x)
         hidden_actor = self.actor(x)
+
+        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+
+
+class HNBase(NNBase):
+    def __init__(self, num_inputs, recurrent=False, hidden_size=64):
+        super(HNBase, self).__init__(recurrent, num_inputs, hidden_size)
+
+        if recurrent:
+            num_inputs = hidden_size
+
+        # TODO : no init for HN. is this ok?
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), nn.init.calculate_gain('relu'))
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.actorHN = HyperNetwork(
+                        layers=[hidden_size * 10],
+                        te_dim=5,
+                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size]),
+                        device=device).to(device)
+
+        self.criticHN = HyperNetwork(
+                        layers=[hidden_size * 10],
+                        te_dim=5,
+                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size]),
+                        device=device).to(device)
+
+        self.actorTN = TargetNetwork(
+                         n_in=num_inputs,
+                         n_out=hidden_size,
+                         hidden_layers=[hidden_size],
+                         no_weights=True,
+                         bn_track_stats=False,
+                         activation_fn=torch.nn.Tanh(),
+                         out_fn=torch.nn.Tanh(),
+                         device=device).to(device)
+
+        self.criticTN = TargetNetwork(
+                         n_in=num_inputs,
+                         n_out=hidden_size,
+                         hidden_layers=[hidden_size],
+                         no_weights=True,
+                         bn_track_stats=False,
+                         activation_fn=torch.nn.Tanh(),
+                         out_fn=torch.nn.Tanh(),
+                         device=device).to(device)
+
+        self.critic_linear = init_(nn.Linear(hidden_size, 1))
+        self.tasks_trained = 0
+        self.train()
+
+    def forward(self, inputs, rnn_hxs, masks, task_id=0):
+        # generate a new embedding if task has not been seen before
+        if task_id > self.tasks_trained - 1:
+            self.tasks_trained += 1
+            self.criticHN.gen_new_task_emb()
+            self.actorHN.gen_new_task_emb()
+
+        self.criticTN.set_weights(self.criticHN(task_id))  # fixed task id of 0 for early testing
+        self.actorTN.set_weights(self.actorHN(task_id))
+
+        hidden_critic, _ = self.criticTN(inputs)
+        hidden_actor, _ = self.actorTN(inputs)
 
         return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
