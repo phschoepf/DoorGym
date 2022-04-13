@@ -388,7 +388,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 time.sleep(1)
 
     def disconnet_to_unity(self):
-        if hasattr(self,'remote'):
+        if hasattr(self,'remote') and self.remote is not None:
             self.remote.close()
 
     def unity_init(self, port):
