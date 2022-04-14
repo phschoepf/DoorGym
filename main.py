@@ -471,7 +471,7 @@ if __name__ == "__main__":
         # args_variant = {**args, **variant}
         # parse(args_variant)
         offpolicy_main(variant)
-    elif args.algo == 'a2c' or args.algo == 'ppo':
+    elif args.algo in ['a2c', 'ppo', 'hnppo']:
         # parse(args_variant)
         onpolicy_main()
     else:

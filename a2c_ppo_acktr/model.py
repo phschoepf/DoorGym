@@ -274,12 +274,6 @@ class HNBase(NNBase):
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks, task_id=0):
-        # generate a new embedding if task has not been seen before
-        if task_id > self.tasks_trained - 1:
-            self.tasks_trained += 1
-            self.criticHN.gen_new_task_emb()
-            self.actorHN.gen_new_task_emb()
-
         self.criticTN.set_weights(self.criticHN(task_id))  # fixed task id of 0 for early testing
         self.actorTN.set_weights(self.actorHN(task_id))
 

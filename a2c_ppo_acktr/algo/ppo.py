@@ -114,6 +114,7 @@ class HNPPO():
                  task_id=0,
                  beta=5e-3):
 
+        assert actor_critic.base.__class__.__name__ == "HNBase"
         self.actor_critic = actor_critic
 
         self.clip_param = clip_param
@@ -126,14 +127,20 @@ class HNPPO():
         self.max_grad_norm = max_grad_norm
         self.use_clipped_value_loss = use_clipped_value_loss
 
-        critic = actor_critic.criticHN
-        actor = actor_critic.actorHN
+        self.critic = actor_critic.base.criticHN
+        self.actor = actor_critic.base.actorHN
         self.task_id = task_id
         self.beta = beta
-        self.theta_optimizerC = optim.Adam(list(critic.theta), lr=lr, eps=eps)
-        self.emb_optimizerC = optim.Adam([critic.get_task_emb(self.task_id)], lr=lr, eps=eps)
-        self.theta_optimizerA = optim.Adam(list(actor.theta), lr=lr, eps=eps)
-        self.emb_optimizerA = optim.Adam([actor.get_task_emb(self.task_id)], lr=lr, eps=eps)
+
+        # generate new task embeddings if the task has not been seen by the HNs before
+        if self.task_id > actor_critic.base.tasks_trained - 1:
+            self.critic.gen_new_task_emb()
+            self.actor.gen_new_task_emb()
+
+        self.theta_optimizerC = optim.Adam(list(self.critic.theta), lr=lr, eps=eps)
+        self.emb_optimizerC = optim.Adam([self.critic.get_task_emb(self.task_id)], lr=lr, eps=eps)
+        self.theta_optimizerA = optim.Adam(list(self.actor.theta), lr=lr, eps=eps)
+        self.emb_optimizerA = optim.Adam([self.actor.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
@@ -146,8 +153,8 @@ class HNPPO():
 
         calc_reg = self.task_id > 0 and self.beta > 0
         if self.beta > 0:
-            targetsC = get_current_targets(self.task_id, self.actor_critic.criticHN)
-            targetsA = get_current_targets(self.task_id, self.actor_critic.actorHN)
+            targetsC = get_current_targets(self.task_id, self.critic)
+            targetsA = get_current_targets(self.task_id, self.actor)
         else:
             targetsC = None
             targetsA = None
@@ -195,8 +202,8 @@ class HNPPO():
 
                 (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef).backward()
-                nn.utils.clip_grad_norm_(self.actor_critic.parameters(),
-                                         self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
                 self.emb_optimizerC.step()
                 self.emb_optimizerA.step()
 
@@ -220,8 +227,8 @@ class HNPPO():
 
                     # Calculate the regularization loss using dTheta
                     # This implements the second part of equation 2
-                    loss_regC = calc_fix_target_reg(self.actor_critic.criticHN, self.task_id, targets=targetsC, dTheta=dThetaC)
-                    loss_regA = calc_fix_target_reg(self.actor_critic.actorHN, self.task_id, targets=targetsA, dTheta=dThetaA)
+                    loss_regC = calc_fix_target_reg(self.critic, self.task_id, targets=targetsC, dTheta=dThetaC)
+                    loss_regA = calc_fix_target_reg(self.actor, self.task_id, targets=targetsA, dTheta=dThetaA)
 
                     # Multiply the regularization loss with the scaling factor
                     loss_regC *= self.beta
