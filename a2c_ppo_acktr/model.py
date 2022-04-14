@@ -237,19 +237,17 @@ class HNBase(NNBase):
                                constant_(x, 0), nn.init.calculate_gain('relu'))
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.actorHN = HyperNetwork(
-                        layers=[hidden_size * 10],
+        # one HN to generate weights for both actor and critic
+        # we double up the output size to fill both networks in one go
+        self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size])
+        self.output_dims_c = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=[hidden_size, hidden_size])
+        self.hnet = HyperNetwork(
+                        layers=[hidden_size * 10, hidden_size * 10],
                         te_dim=5,
-                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size]),
-                        device=device).to(device)
+                        target_shapes=self.output_dims_a + self.output_dims_c,
+                        device=device)
 
-        self.criticHN = HyperNetwork(
-                        layers=[hidden_size * 10],
-                        te_dim=5,
-                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=[hidden_size, hidden_size]),
-                        device=device).to(device)
-
-        self.actorTN = TargetNetwork(
+        self.actor = TargetNetwork(
                          n_in=num_inputs,
                          n_out=hidden_size,
                          hidden_layers=[hidden_size],
@@ -257,10 +255,10 @@ class HNBase(NNBase):
                          bn_track_stats=False,
                          activation_fn=torch.nn.Tanh(),
                          out_fn=torch.nn.Tanh(),
-                         device=device).to(device)
+                         device=device)
 
         # critic_linear was integrated into the main critic network here so all learnable params are inside HNs
-        self.criticTN = TargetNetwork(
+        self.critic = TargetNetwork(
                          n_in=num_inputs,
                          n_out=1,
                          hidden_layers=[hidden_size, hidden_size],
@@ -268,16 +266,18 @@ class HNBase(NNBase):
                          bn_track_stats=False,
                          activation_fn=torch.nn.Tanh(),
                          out_fn=None,
-                         device=device).to(device)
+                         device=device)
 
         self.tasks_trained = 0
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks, task_id=0):
-        self.criticTN.set_weights(self.criticHN(task_id))  # fixed task id of 0 for early testing
-        self.actorTN.set_weights(self.actorHN(task_id))
+        # generate weights for both networks, as a list, then split the list to populate the networks' parameters
+        generated_weights = self.hnet(task_id)
+        self.critic.set_weights(generated_weights[len(self.output_dims_a):])
+        self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
 
-        hidden_critic = self.criticTN(inputs)
-        hidden_actor, _ = self.actorTN(inputs)
+        hidden_critic = self.critic(inputs)
+        hidden_actor, _ = self.actor(inputs)
 
         return hidden_critic, hidden_actor, rnn_hxs

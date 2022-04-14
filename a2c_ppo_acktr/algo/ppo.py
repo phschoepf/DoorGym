@@ -127,22 +127,19 @@ class HNPPO():
         self.max_grad_norm = max_grad_norm
         self.use_clipped_value_loss = use_clipped_value_loss
 
-        self.critic = actor_critic.base.criticHN
-        self.actor = actor_critic.base.actorHN
+        self.hnet = actor_critic.base.hnet
         self.task_id = task_id
         self.beta = beta
 
         # generate new task embeddings if the task has not been seen by the HNs before
         if self.task_id > actor_critic.base.tasks_trained - 1:
-            self.critic.gen_new_task_emb()
-            self.actor.gen_new_task_emb()
+            self.hnet.gen_new_task_emb()
 
-        self.theta_optimizerC = optim.Adam(list(self.critic.theta), lr=lr, eps=eps)
-        self.emb_optimizerC = optim.Adam([self.critic.get_task_emb(self.task_id)], lr=lr, eps=eps)
-        self.theta_optimizerA = optim.Adam(list(self.actor.theta), lr=lr, eps=eps)
-        self.emb_optimizerA = optim.Adam([self.actor.get_task_emb(self.task_id)], lr=lr, eps=eps)
+        self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
+        self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
+        self.hnet.to(torch.device("cuda:0"))  # TODO hacky, check which tensor is not on the GPU anyway
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
         advantages = (advantages - advantages.mean()) / (
             advantages.std() + 1e-5)
@@ -153,11 +150,9 @@ class HNPPO():
 
         calc_reg = self.task_id > 0 and self.beta > 0
         if self.beta > 0:
-            targetsC = get_current_targets(self.task_id, self.critic)
-            targetsA = get_current_targets(self.task_id, self.actor)
+            targets = get_current_targets(self.task_id, self.hnet)
         else:
-            targetsC = None
-            targetsA = None
+            targets = None
 
         for e in range(self.ppo_epoch):
             if self.actor_critic.is_recurrent:
@@ -195,52 +190,42 @@ class HNPPO():
                 else:
                     value_loss = 0.5 * (return_batch - values).pow(2).mean()
 
-                self.theta_optimizerC.zero_grad()
-                self.emb_optimizerC.zero_grad()
-                self.theta_optimizerA.zero_grad()
-                self.emb_optimizerA.zero_grad()
+                self.theta_optimizer.zero_grad()
+                self.emb_optimizer.zero_grad()
 
                 (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef).backward()
-                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
-                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
-                self.emb_optimizerC.step()
-                self.emb_optimizerA.step()
+                nn.utils.clip_grad_norm_(self.hnet.parameters(), self.max_grad_norm)
+                self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()
                 action_loss_epoch += action_loss.item()
                 dist_entropy_epoch += dist_entropy.item()
 
                 # Initialize the regularization loss
-                loss_regC = 0
-                loss_regA = 9
+                loss_reg = 0
 
                 # Initialize dTheta, the candidate change in the hnet parameters
-                dThetaC = None
-                dThetaA = None
+                dTheta = None
 
                 if calc_reg:
                     # Find out the candidate change (dTheta) in trainable parameters (theta) of the hnet
                     # This function just computes the change (dTheta), but does not apply it
-                    dThetaC = calc_delta_theta(self.theta_optimizerC, use_sgd_change=False, detach_dt=True)
-                    dThetaA = calc_delta_theta(self.theta_optimizerA, use_sgd_change=False, detach_dt=True)
+                    dTheta = calc_delta_theta(self.theta_optimizer, use_sgd_change=False, detach_dt=True)
 
                     # Calculate the regularization loss using dTheta
                     # This implements the second part of equation 2
-                    loss_regC = calc_fix_target_reg(self.critic, self.task_id, targets=targetsC, dTheta=dThetaC)
-                    loss_regA = calc_fix_target_reg(self.actor, self.task_id, targets=targetsA, dTheta=dThetaA)
+                    loss_reg = calc_fix_target_reg(self.critic, self.task_id, targets=targets, dTheta=dTheta)
 
                     # Multiply the regularization loss with the scaling factor
-                    loss_regC *= self.beta
-                    loss_regA *= self.beta
+                    loss_reg *= self.beta
 
                     # Backpropagate the regularization loss
-                    loss_regC.backward()
-                    loss_regA.backward()
+                    loss_reg.backward()
 
                 # Update the hnet params using the current task loss and the regularization loss
-                self.theta_optimizerC.step()
-                self.theta_optimizerA.step()
+                self.theta_optimizer.step()
+                self.theta_optimizer.step()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 
