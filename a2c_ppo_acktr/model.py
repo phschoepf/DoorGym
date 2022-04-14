@@ -246,7 +246,7 @@ class HNBase(NNBase):
         self.criticHN = HyperNetwork(
                         layers=[hidden_size * 10],
                         te_dim=5,
-                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size]),
+                        target_shapes=TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=[hidden_size, hidden_size]),
                         device=device).to(device)
 
         self.actorTN = TargetNetwork(
@@ -259,17 +259,17 @@ class HNBase(NNBase):
                          out_fn=torch.nn.Tanh(),
                          device=device).to(device)
 
+        # critic_linear was integrated into the main critic network here so all learnable params are inside HNs
         self.criticTN = TargetNetwork(
                          n_in=num_inputs,
-                         n_out=hidden_size,
-                         hidden_layers=[hidden_size],
+                         n_out=1,
+                         hidden_layers=[hidden_size, hidden_size],
                          no_weights=True,
                          bn_track_stats=False,
                          activation_fn=torch.nn.Tanh(),
-                         out_fn=torch.nn.Tanh(),
+                         out_fn=None,
                          device=device).to(device)
 
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
         self.tasks_trained = 0
         self.train()
 
@@ -283,7 +283,7 @@ class HNBase(NNBase):
         self.criticTN.set_weights(self.criticHN(task_id))  # fixed task id of 0 for early testing
         self.actorTN.set_weights(self.actorHN(task_id))
 
-        hidden_critic, _ = self.criticTN(inputs)
+        hidden_critic = self.criticTN(inputs)
         hidden_actor, _ = self.actorTN(inputs)
 
-        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+        return hidden_critic, hidden_actor, rnn_hxs

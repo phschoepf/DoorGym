@@ -109,6 +109,18 @@ def onpolicy_main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm)
+    elif args.algo == 'hnppo':
+        agent = algo.ppo.HNPPO(
+            actor_critic,
+            args.clip_param,
+            args.ppo_epoch,
+            args.num_mini_batch,
+            args.value_loss_coef,
+            args.entropy_coef,
+            lr=args.lr,
+            eps=args.eps,
+            max_grad_norm=args.max_grad_norm,
+            task_id=0)  # TODO change for further tasks
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               dummy_obs.shape, envs.action_space,
