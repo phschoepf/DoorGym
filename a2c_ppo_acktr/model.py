@@ -271,7 +271,18 @@ class HNBase(NNBase):
         self.tasks_trained = 0
         self.train()
 
-    def forward(self, inputs, rnn_hxs, masks, task_id=0):
+    def add_task(self) -> int:
+        """
+        Add a task to the hnet.
+
+        Returns:
+            new number of tasks know to the hnet.
+        """
+        self.tasks_trained += 1
+        self.hnet.gen_new_task_emb()
+        return self.tasks_trained
+
+    def forward(self, inputs, rnn_hxs, masks, task_id):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
         generated_weights = self.hnet(task_id)
         self.critic.set_weights(generated_weights[len(self.output_dims_a):])

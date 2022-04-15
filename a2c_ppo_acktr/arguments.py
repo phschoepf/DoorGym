@@ -205,6 +205,11 @@ def get_args():
         action="store_true",
         default=False,
         help='Turn on pos control')
+    parser.add_argument(
+        '--task-id',
+        type=int,
+        default=0,
+        help='task id for continual learning')
 
     args = parser.parse_args()
 

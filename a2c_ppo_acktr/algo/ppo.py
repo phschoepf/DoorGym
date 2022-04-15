@@ -107,11 +107,11 @@ class HNPPO():
                  num_mini_batch,
                  value_loss_coef,
                  entropy_coef,
+                 task_id: int,
                  lr=None,
                  eps=None,
                  max_grad_norm=None,
                  use_clipped_value_loss=True,
-                 task_id=0,
                  beta=5e-3):
 
         assert actor_critic.base.__class__.__name__ == "HNBase"
@@ -133,7 +133,7 @@ class HNPPO():
 
         # generate new task embeddings if the task has not been seen by the HNs before
         if self.task_id > actor_critic.base.tasks_trained - 1:
-            self.hnet.gen_new_task_emb()
+            actor_critic.base.add_task()
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)

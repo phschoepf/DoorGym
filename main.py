@@ -71,15 +71,15 @@ def onpolicy_main():
         visionnet_input = None
         nn = None
 
-    assert not (pretrained_policy_load and args.resume), "cannot finetune and resume training at the same time"
-    if pretrained_policy_load:
+    assert not (args.pretrained_policy_load and args.resume), "cannot finetune and resume training at the same time"
+    if args.pretrained_policy_load:
         j_start = 0
-        print("loading pretrained model from", pretrained_policy_load)
-        actor_critic, ob_rms = torch.load(pretrained_policy_load)
+        print("loading pretrained model from", args.pretrained_policy_load)
+        actor_critic, ob_rms = torch.load(args.pretrained_policy_load)
     elif args.resume:
         # resume from last checkpoint
         savename_regex = f".*?{args.env_name}_{args.save_name}\\.([0-9]+)\\.pt"
-        j_start = int(re.match(savename_regex, pretrained_policy_load).group(1)) + 1
+        j_start = int(re.match(savename_regex, args.pretrained_policy_load).group(1)) + 1
 
     else:
         # start from episode 0 with new policy
@@ -130,7 +130,7 @@ def onpolicy_main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm,
-            task_id=0)  # TODO change for further tasks
+            task_id=args.task_id)
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               dummy_obs.shape, envs.action_space,
@@ -248,7 +248,7 @@ def onpolicy_main():
             print(
                 "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
                 .format(j, total_num_steps,
-                        int(total_num_steps / (end - start)),
+                        int(current_num_steps / (end - start)),
                         len(episode_rewards), np.mean(episode_rewards),
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
@@ -415,7 +415,6 @@ if __name__ == "__main__":
 
     knob_noisy = args.knob_noisy
     obs_noisy = args.obs_noisy
-    pretrained_policy_load = args.pretrained_policy_load
     env_kwargs = dict(port = args.port,
                     visionnet_input = args.visionnet_input,
                     unity = args.unity,
