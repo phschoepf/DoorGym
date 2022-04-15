@@ -80,7 +80,8 @@ def onpolicy_main():
         # resume from last checkpoint
         savename_regex = f".*?{args.env_name}_{args.save_name}\\.([0-9]+)\\.pt"
         j_start = int(re.match(savename_regex, args.pretrained_policy_load).group(1)) + 1
-
+        print("loading checkpoint from", args.resume)
+        actor_critic, ob_rms = torch.load(args.resume)
     else:
         # start from episode 0 with new policy
         j_start = 0
@@ -94,6 +95,7 @@ def onpolicy_main():
             actor_critic.visionmodel = visionmodel.eval()
     actor_critic.nn = nn
     actor_critic.to(device)
+    actor_critic.base.set_active_task(args.task_id)
 
     #disable normalizer
     vec_norm = get_vec_normalize(envs)

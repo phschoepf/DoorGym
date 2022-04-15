@@ -215,7 +215,7 @@ class HNPPO():
 
                     # Calculate the regularization loss using dTheta
                     # This implements the second part of equation 2
-                    loss_reg = calc_fix_target_reg(self.critic, self.task_id, targets=targets, dTheta=dTheta)
+                    loss_reg = calc_fix_target_reg(self.hnet, self.task_id, targets=targets, dTheta=dTheta)
 
                     # Multiply the regularization loss with the scaling factor
                     loss_reg *= self.beta
