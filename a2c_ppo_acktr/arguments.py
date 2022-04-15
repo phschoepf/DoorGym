@@ -156,6 +156,11 @@ def get_args():
         default=None,
         help='which pretrained model to load')
     parser.add_argument(
+        '--resume',
+        type=str,
+        default=None,
+        help='resume training from a checkpointed model, preserves the epoch number')
+    parser.add_argument(
         '--replaybuffer-load',
         type=str,
         default=None,

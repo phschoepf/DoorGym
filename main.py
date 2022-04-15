@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 import pickle
@@ -70,10 +71,19 @@ def onpolicy_main():
         visionnet_input = None
         nn = None
 
+    assert not (pretrained_policy_load and args.resume), "cannot finetune and resume training at the same time"
     if pretrained_policy_load:
-        print("loading", pretrained_policy_load)
+        j_start = 0
+        print("loading pretrained model from", pretrained_policy_load)
         actor_critic, ob_rms = torch.load(pretrained_policy_load)
+    elif args.resume:
+        # resume from last checkpoint
+        savename_regex = f".*?{args.env_name}_{args.save_name}\\.([0-9]+)\\.pt"
+        j_start = int(re.match(savename_regex, pretrained_policy_load).group(1)) + 1
+
     else:
+        # start from episode 0 with new policy
+        j_start = 0
         actor_critic = Policy(
             dummy_obs.shape,
             envs.action_space,
@@ -148,7 +158,7 @@ def onpolicy_main():
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
 
-    for j in range(num_updates):
+    for j in range(j_start, num_updates):
 
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
@@ -212,6 +222,8 @@ def onpolicy_main():
 
         # Get total number of timesteps
         total_num_steps = (j + 1) * args.num_processes * args.num_steps
+        # number of timesteps in this training run (since resumption)
+        current_num_steps = (j - j_start + 1) * args.num_processes * args.num_steps
 
         writer.add_scalar("Value loss", value_loss, j)
         writer.add_scalar("action loss", action_loss, j)
