@@ -49,6 +49,7 @@ def onpolicy_inference(
                 knob_noisy, 
                 visionnet_input, 
                 env_kwargs,
+                task_id,
                 actor_critic=None,
                 verbose=True,
                 pos_control=True,
@@ -79,6 +80,8 @@ def onpolicy_inference(
     if not actor_critic:
             actor_critic, ob_rms = torch.load(load_name)
     actor_critic = actor_critic.eval()
+    print(f"Evaluating for task {task_id}")
+    actor_critic.base.set_active_task(task_id)  # set CL task id for eval (todo maybe change this to a per-door basis)
     if env_kwargs['visionnet_input'] and env_name.find('doorenv')>-1:
         actor_critic.visionmodel = visionmodel
         actor_critic.visionnet_input = env_obj.visionnet_input
@@ -415,6 +418,12 @@ if __name__ == "__main__":
         type=int,
         default=4,
         help='number of step skip in pos control')
+    parser.add_argument(
+        '--task-id',
+        type=int,
+        required=True,
+        help='id of CL task to evaluate'  # TODO remove this for class CL later
+    )
     args = parser.parse_args()
     det = not args.non_det
 
@@ -435,7 +444,8 @@ if __name__ == "__main__":
             visionnet_input=args.visionnet_input, 
             env_kwargs=env_kwargs,
             pos_control=args.pos_control,
-            step_skip=args.step_skip)
+            step_skip=args.step_skip,
+            task_id=args.task_id)
     elif args.load_name.find("sac")>-1 or args.load_name.find("td3")>-1:
         offpolicy_inference(
             seed=args.seed, 

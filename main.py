@@ -272,7 +272,8 @@ def onpolicy_main():
                                                 actor_critic=actor_critic,
                                                 verbose=False,
                                                 pos_control=args.pos_control,
-                                                step_skip=args.step_skip)
+                                                step_skip=args.step_skip,
+                                                task_id=args.task_id)
 
             print("{}th update. {}th timestep. opening rate {}%. Average time to open is {}.".format(j, total_num_steps, opening_rate, opening_timeavg))
             writer.add_scalar("Opening rate per envstep", opening_rate, total_num_steps)

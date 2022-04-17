@@ -208,7 +208,7 @@ def get_args():
     parser.add_argument(
         '--task-id',
         type=int,
-        default=0,
+        required=True,
         help='task id for continual learning')
 
     args = parser.parse_args()
