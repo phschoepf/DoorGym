@@ -18,7 +18,7 @@ from util import add_vision_noise, add_joint_noise,load_visionmodel, prepare_tra
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
-from a2c_ppo_acktr.model import Policy
+from a2c_ppo_acktr.model import Policy, HNBase
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import get_vec_normalize
 
@@ -88,7 +88,9 @@ def onpolicy_main():
         actor_critic = Policy(
             dummy_obs.shape,
             envs.action_space,
-            base_kwargs={'recurrent': args.recurrent_policy})
+            base=(HNBase if args.algo == "hnppo" else None),
+            base_kwargs={'recurrent': args.recurrent_policy,
+                         'action_space': envs.action_space})
     
     if visionnet_input: 
             visionmodel = load_visionmodel(args.save_name, args.visionmodel_path, VisionModelXYZ())  
