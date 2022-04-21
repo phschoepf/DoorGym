@@ -39,7 +39,7 @@ class Policy(nn.Module):
         if type(base) == HNBase:
             if not action_space.__class__.__name__ == "Box":
                 raise NotImplementedError("Hypernetwork dist only implemented for Box")
-            self.dist = base.dist
+            self.dist = self.base.dist
         else:
             if action_space.__class__.__name__ == "Discrete":
                 num_outputs = action_space.n
@@ -67,6 +67,10 @@ class Policy(nn.Module):
 
     def act(self, inputs, rnn_hxs, masks, deterministic=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
+
+        # for some reason we have to do this assignment each time before calling it
+        if hasattr(self.base, 'dist'):
+            self.dist = self.base.dist
         dist = self.dist(actor_features)
 
         if deterministic:
@@ -85,6 +89,10 @@ class Policy(nn.Module):
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
+
+        # for some reason we have to do this assignment each time before calling it
+        if hasattr(self.base, 'dist'):
+            self.dist = self.base.dist
         dist = self.dist(actor_features)
 
         action_log_probs = dist.log_probs(action)
@@ -247,7 +255,7 @@ class HNBase(NNBase):
         self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size])
         self.output_dims_c = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=[hidden_size, hidden_size])
         num_outputs = action_space.shape[0]
-        self.output_dims_dist = [[self.output_size, num_outputs], [num_outputs], [num_outputs]]
+        self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
         self.hnet = HyperNetwork(
                         layers=[hidden_size * 10, hidden_size * 10],
@@ -302,12 +310,7 @@ class HNBase(NNBase):
         generated_weights = self.hnet(self.active_task)
         self.critic.set_weights(generated_weights[len(self.output_dims_a):len(self.output_dims_a) + len(self.output_dims_c)])
         self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
-
-        dist_weights = generated_weights[len(self.output_dims_a) + len(self.output_dims_c):]
-        assert len(dist_weights) == 3
-        self.dist.fc_mean.weight = nn.Parameter(dist_weights[0])
-        self.dist.fc_mean.bias = nn.Parameter(dist_weights[1])
-        self.dist.logstd._bias = nn.Parameter(dist_weights[2])
+        self.dist.set_weights(generated_weights[len(self.output_dims_a) + len(self.output_dims_c):])
 
         hidden_critic = self.critic(inputs)
         hidden_actor, _ = self.actor(inputs)
