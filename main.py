@@ -242,7 +242,7 @@ def onpolicy_main():
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
                 or j == num_updates - 1) and args.save_dir != "":
-            save_path = os.path.join(args.save_dir, args.algo, args.env_name + args.save_name)
+            save_path = os.path.join(args.save_dir, args.algo, f"{args.env_name}_{args.save_name}")
             try:
                 os.makedirs(save_path)
             except OSError:
