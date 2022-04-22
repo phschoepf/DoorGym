@@ -78,11 +78,6 @@ class DiagGaussian(nn.Module):
         self.fc_mean = init_(nn.Linear(num_inputs, num_outputs))
         self.logstd = AddBias(torch.zeros(num_outputs))
 
-    def set_weights(self, weights):
-        self.fc_mean.weight = nn.Parameter(weights[0])
-        self.fc_mean.bias = nn.Parameter(weights[1])
-        self.logstd._bias = nn.Parameter(weights[2].unsqueeze(1))
-
     def forward(self, x):
         action_mean = self.fc_mean(x)
 
@@ -93,6 +88,39 @@ class DiagGaussian(nn.Module):
             zeros = zeros.to(device)
 
         action_logstd = self.logstd(zeros)
+        return FixedNormal(action_mean, action_logstd.exp())
+
+
+class FunctionalDiagGaussian(nn.Module):
+    """DiagGaussian implementation using Functional interface so we can update weights via the hnet."""
+    def __init__(self, num_inputs, num_outputs):
+        super(FunctionalDiagGaussian, self).__init__()
+        self.weights = None
+
+    def set_weights(self, weights):
+        assert len(weights) == 3
+        # dict for clarity
+        self.weights = {'fc_weight': weights[0],
+                        'fc_bias': weights[1],
+                        'logstd_bias': weights[2].unsqueeze(1)
+                        }
+
+    def forward(self, x):
+        action_mean = F.linear(x, self.weights['fc_weight'], bias=self.weights['fc_bias'])
+
+        #  An ugly hack for my KFAC implementation.
+        zeros = torch.zeros(action_mean.size())
+        if x.is_cuda:
+            device = x.get_device()
+            zeros = zeros.to(device)
+
+        # stuff from AddBias directly put here
+        if action_mean.dim() == 2:
+            bias = self.weights['logstd_bias'].t().view(1, -1)
+        else:
+            bias = self.weights['logstd_bias'].t().view(1, -1, 1, 1)
+
+        action_logstd = zeros + bias
         return FixedNormal(action_mean, action_logstd.exp())
 
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from torch.nn.parameter import Parameter
 from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork, TargetNetwork
 
-from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
+from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian, FunctionalDiagGaussian
 from a2c_ppo_acktr.utils import init
 
 logits_input = False
@@ -316,7 +316,7 @@ class HNBase(NNBase):
                          device=device)
 
         # dist was also moved here from policy so we can populate it with weights from the HN
-        self.dist = DiagGaussian(self.output_size, num_outputs)
+        self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
 
         self.tasks_trained = 0
         self.active_task = None
