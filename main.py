@@ -237,7 +237,7 @@ def onpolicy_main():
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
                 or j == num_updates - 1) and args.save_dir != "":
-            save_path = os.path.join(args.save_dir, args.algo)
+            save_path = os.path.join(args.save_dir, args.algo, args.env_name + args.save_name)
             try:
                 os.makedirs(save_path)
             except OSError:
@@ -245,7 +245,7 @@ def onpolicy_main():
             torch.save([
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
-            ], os.path.join(save_path, args.env_name + "_{}.{}.pt".format(args.save_name,j)))
+            ], os.path.join(save_path, f"{args.save_name}.{j}.pt"))
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             end = time.time()
