@@ -239,7 +239,15 @@ class MLPBase(NNBase):
 
 
 class HNBase(NNBase):
-    def __init__(self, num_inputs, recurrent=False, hidden_size=64, action_space=None):
+    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=64):
+        """
+        Args:
+            num_inputs: Number of input (env observations)
+            action_space: Action space of the env. Needed to infer output shape.
+            hnet: Class of hypernet to use. Must be a subclass of "HyperNetwork". Currently only HN or ChunkedHN.
+            recurrent: Always false for HN
+            hidden_size: Hidden units per layer in the target network.
+        """
         super(HNBase, self).__init__(recurrent, num_inputs, hidden_size)
 
         if recurrent:
@@ -257,11 +265,34 @@ class HNBase(NNBase):
         num_outputs = action_space.shape[0]
         self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
-        self.hnet = HyperNetwork(
-                        layers=[hidden_size * 10, hidden_size * 10],
-                        te_dim=5,
-                        target_shapes=self.output_dims_a + self.output_dims_c + self.output_dims_dist,
-                        device=device)
+        # Common param dict for the hypernetwork. We filter what we need for the particular hypernetwork types.
+        hparams = {
+            'target_shapes': self.output_dims_a + self.output_dims_c + self.output_dims_dist,
+            'layers': [hidden_size * 10, hidden_size * 10],
+            'te_dim': 5,
+            'chunk_dim': 1000,
+            'ce_dim': 5,
+            'device': device
+        }
+
+        if hnet == HyperNetwork:
+            self.hnet = hnet(
+                hparams['target_shapes'],
+                layers=hparams['layers'],
+                te_dim=hparams['te_dim'],
+                device=hparams['device'])
+
+        elif hnet == ChunkedHyperNetwork:
+            self.hnet = hnet(
+                hparams['target_shapes'],
+                layers=hparams['layers'],
+                te_dim=hparams['te_dim'],
+                chunk_dim=hparams['chunk_dim'],
+                ce_dim=hparams['ce_dim'],
+                device=hparams['device'])
+
+        else:
+            raise NotImplementedError(f"Unkown hnet class {hnet.__class__.__name__}")
 
         self.actor = TargetNetwork(
                          n_in=num_inputs,

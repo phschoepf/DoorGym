@@ -31,6 +31,8 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 import doorenv
 import doorenv2
 
+from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork
+
 def onpolicy_main():
     print("onpolicy main")
 
@@ -88,9 +90,10 @@ def onpolicy_main():
         actor_critic = Policy(
             dummy_obs.shape,
             envs.action_space,
-            base=(HNBase if args.algo == "hnppo" else None),
+            base=(HNBase if args.algo.find("hnppo") > -1 else None),
             base_kwargs={'recurrent': args.recurrent_policy,
-                         'action_space': envs.action_space})
+                         'action_space': envs.action_space,
+                         'hnet': HyperNetwork if args.algo == "hnppo" else ChunkedHyperNetwork if args.algo == "chnppo" else None})
     
     if visionnet_input: 
             visionmodel = load_visionmodel(args.save_name, args.visionmodel_path, VisionModelXYZ())  
@@ -123,7 +126,7 @@ def onpolicy_main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm)
-    elif args.algo == 'hnppo':
+    elif args.algo.find('hnppo') > -1:
         agent = algo.ppo.HNPPO(
             actor_critic,
             args.clip_param,
@@ -135,6 +138,8 @@ def onpolicy_main():
             eps=args.eps,
             max_grad_norm=args.max_grad_norm,
             task_id=args.task_id)
+    else:
+        raise ValueError(f"Unknown algo {args.algo}")
 
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               dummy_obs.shape, envs.action_space,
@@ -487,7 +492,7 @@ if __name__ == "__main__":
         # args_variant = {**args, **variant}
         # parse(args_variant)
         offpolicy_main(variant)
-    elif args.algo in ['a2c', 'ppo', 'hnppo']:
+    elif args.algo in ['a2c', 'ppo', 'hnppo', 'chnppo']:
         # parse(args_variant)
         onpolicy_main()
     else:
