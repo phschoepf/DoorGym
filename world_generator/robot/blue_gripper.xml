@@ -26,9 +26,9 @@
                     <inertial pos="0.00434775 2.01235e-05 -0.0764683" quat="0.999953 0.000336513 -0.00963902 8.26702e-05" mass="1.80901" diaginertia="0.00919572 0.00871918 0.00387865" />
                     <joint name="base_roll_joint" class="robot" pos="0 0 0" axis="0 0 1" limited="true" range="-2.3412 3.3999" />
                     <geom name="link2" type="mesh" material="Plastic" rgba="0.843137 0.815686 0.752941 1" mesh="shoulder_link" contype="2" conaffinity="24" />
-                    <body name="robotshoulder_liftlink" pos="-0.01143 0 -0.21082" quat="-2.59734e-06 2.59735e-06 -0.707108 0.707105">
+                    <body name="robotshoulder_liftlink" pos="-0.01143 0 -0.21082" euler="-1.57 0 1.57">
                         <inertial pos="-5.00836e-06 0.000232928 -1.77451e-05" quat="0.708323 -0.00293225 -0.00290296 0.705876" mass="0.388307" diaginertia="0.000818261 0.00080429 0.000550823" />
-                        <joint name="shoulder_lift_joint" class="robot" pos="0 0 0" axis="0 0 1" limited="true" range="-2.2944 0" />
+                        <joint name="shoulder_lift_joint" class="robot" pos="0 0 0" axis="0 0 1" limited="true" range="-1.57 0.7244" />
                         <geom name="lift1" type="mesh" material="Plastic" rgba="0.792157 0.819608 0.933333 1" mesh="shoulder_lift_link" contype="0" />
                         <body name="robotupperarm_link" pos="0 0.070147 -6.25e-05" quat="0.499124 0.499126 0.500872 -0.500874">
                             <inertial pos="0.00526565 5.32997e-05 -0.0641726" quat="0.999909 0.000376484 0.0133407 0.0019152" mass="1.52396" diaginertia="0.00578958 0.00530315 0.00342333" />
