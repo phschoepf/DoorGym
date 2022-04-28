@@ -238,6 +238,18 @@ def onpolicy_main():
         writer.add_scalar("action loss", action_loss, j)
         writer.add_scalar("dist entropy loss", dist_entropy, j)
         writer.add_scalar("Episode rewards", np.mean(episode_rewards), j)
+        if isinstance(agent.actor_critic.base, HNBase):
+            # log embeddings to see how they change with the task
+            all_embs = torch.cat([emb.clone().cpu().data.expand(1,-1) for emb in agent.actor_critic.base.hnet.task_embs])
+            writer.add_embedding(mat=all_embs, tag=f'hnet.embeddings', metadata=[f'hnet.embeddings{j}'], global_step=j)
+
+            # log histograms of target network weights
+            for name, param in agent.actor_critic.base.actor.named_parameters(prefix='actor'):
+                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
+            for name, param in agent.actor_critic.base.critic.named_parameters(prefix='critic'):
+                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
+            for name, param in agent.actor_critic.base.dist.named_parameters(prefix='dist'):
+                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0

@@ -338,7 +338,7 @@ class HNBase(NNBase):
 
     def forward(self, inputs, rnn_hxs, masks):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
-        generated_weights = self.hnet(self.active_task)
+        generated_weights = nn.ParameterList(nn.Parameter(weight) for weight in self.hnet(self.active_task))
         self.critic.set_weights(generated_weights[len(self.output_dims_a):len(self.output_dims_a) + len(self.output_dims_c)])
         self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
         self.dist.set_weights(generated_weights[len(self.output_dims_a) + len(self.output_dims_c):])

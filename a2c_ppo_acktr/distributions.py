@@ -100,10 +100,10 @@ class FunctionalDiagGaussian(nn.Module):
     def set_weights(self, weights):
         assert len(weights) == 3
         # dict for clarity
-        self.weights = {'fc_weight': weights[0],
-                        'fc_bias': weights[1],
-                        'logstd_bias': weights[2].unsqueeze(1)
-                        }
+        self.weights = nn.ParameterDict({'fc_weight': weights[0],
+                                         'fc_bias': weights[1],
+                                         'logstd_bias': nn.Parameter(weights[2].unsqueeze(1))  # unsqueeze exposes a bare tensor so we have to re-wrap it
+                                         })
 
     def forward(self, x):
         action_mean = F.linear(x, self.weights['fc_weight'], bias=self.weights['fc_bias'])
