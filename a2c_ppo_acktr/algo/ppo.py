@@ -136,7 +136,7 @@ class HNPPO():
             actor_critic.base.add_task()
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
-        self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
+        self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)] + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
 
     def update(self, rollouts):
         self.hnet.to(torch.device("cuda:0"))  # TODO hacky, check which tensor is not on the GPU anyway
@@ -224,7 +224,6 @@ class HNPPO():
                     loss_reg.backward()
 
                 # Update the hnet params using the current task loss and the regularization loss
-                self.theta_optimizer.step()
                 self.theta_optimizer.step()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
