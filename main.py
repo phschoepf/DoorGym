@@ -44,8 +44,7 @@ def onpolicy_main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
-    summary_name = args.log_dir + '{0}_{1}'
-    writer = SummaryWriter(summary_name.format(args.env_name, args.save_name))
+    writer = SummaryWriter(os.path.join(args.log_dir, args.algo, f'{args.env_name}_{args.save_name}'))
 
     # Make vector env
     envs = make_vec_envs(args.env_name,
