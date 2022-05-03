@@ -306,13 +306,12 @@ class HNBase(NNBase):
                          out_fn=torch.nn.Tanh(),
                          device=device)
 
-        # critic is just a normal nn.Sequential, only used for training
-        self.critic = nn.Sequential(nn.Linear(num_inputs, hidden_size),
-                                    nn.Tanh(),
-                                    nn.Linear(hidden_size, hidden_size),
-                                    nn.Tanh(),
-                                    nn.Linear(hidden_size, 1)
-                                    )
+        # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
+        self.critic = nn.Sequential(
+            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+
+        self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         # dist was also moved here from policy so we can populate it with weights from the HN
         self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
@@ -356,4 +355,4 @@ class HNBase(NNBase):
         hidden_actor, _ = self.actor(inputs)
         # we do not forward the dist here, this is done in Policy.act()
 
-        return hidden_critic, hidden_actor, rnn_hxs
+        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs

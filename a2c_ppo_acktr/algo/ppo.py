@@ -135,8 +135,8 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
-        self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)] + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
+        self.theta_optimizer = optim.Adam(list(self.hnet.theta) + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
+        self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
         self.hnet.to(torch.device("cuda:0"))  # TODO hacky, check which tensor is not on the GPU anyway
