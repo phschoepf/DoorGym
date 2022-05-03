@@ -135,7 +135,7 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
+        self.theta_optimizer = optim.Adam(list(self.hnet.theta) + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -224,7 +224,6 @@ class HNPPO():
                     loss_reg.backward()
 
                 # Update the hnet params using the current task loss and the regularization loss
-                self.theta_optimizer.step()
                 self.theta_optimizer.step()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
