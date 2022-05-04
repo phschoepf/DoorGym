@@ -243,7 +243,7 @@ def onpolicy_main():
             # writer.add_embedding(mat=all_embs, tag=f'hnet.embeddings', global_step=j)
 
             for name, param in enumerate(agent.actor_critic.base.hnet.task_embs):
-                writer.add_histogram(f'emb.{name}', param.clone().cpu().data.numpy(), j)
+                writer.add_histogram(f'emb.{name}', param.clone().detach().cpu().numpy(), j)
             # log histograms of target network weights
             for name, param in agent.actor_critic.base.actor.named_parameters(prefix='actor'):
                 writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
