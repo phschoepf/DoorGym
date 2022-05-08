@@ -83,8 +83,8 @@ def onpolicy_main():
         actor_critic, ob_rms = torch.load(args.pretrained_policy_load)
     elif args.resume:
         # resume from last checkpoint
-        savename_regex = f".*?{args.env_name}_{args.save_name}\\.([0-9]+)\\.pt"
-        j_start = int(re.match(savename_regex, args.pretrained_policy_load).group(1)) + 1
+        savename_regex = f".*?{args.save_name}\\.([0-9]+)\\.pt"
+        j_start = int(re.match(savename_regex, args.resume).group(1)) + 1
         print("loading checkpoint from", args.resume)
         actor_critic, ob_rms = torch.load(args.resume)
     else:
