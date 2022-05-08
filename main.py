@@ -251,8 +251,8 @@ def onpolicy_main():
             # log histograms of target network weights
             for name, param in enumerate(agent.actor_critic.base.actor.weights):
                 writer.add_histogram(f'actor.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in agent.actor_critic.base.critic.named_parameters(prefix='critic'):
-                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
+            for name, param in enumerate(agent.actor_critic.base.critic.weights):
+                writer.add_histogram(f'critic.{name}', param.clone().detach().cpu().numpy(), j)
             for name, param in agent.actor_critic.base.dist.named_parameters(prefix='dist'):
                 writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
 

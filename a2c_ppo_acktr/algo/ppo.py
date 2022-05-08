@@ -137,7 +137,7 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.regularized_params = list(self.hnet.theta) + list(self.actor_critic.base.critic.parameters())
+        self.regularized_params = list(self.hnet.theta)
         self.theta_optimizer = optim.Adam(self.regularized_params, lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
