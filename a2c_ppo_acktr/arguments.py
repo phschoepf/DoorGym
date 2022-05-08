@@ -225,3 +225,91 @@ def get_args():
             'Visionnet_input should be True when Unity is True'
 
     return args
+
+
+def get_args_enjoy():
+    """
+    Argparser for evaluation/inference script enjoy.py
+    TODO: unify with args for training
+    """
+    parser = argparse.ArgumentParser(description='RL')
+    parser.add_argument(
+        '--seed', type=int, default=1, help='random seed (default: 1)')
+    parser.add_argument(
+        '--log-interval',
+        type=int,
+        default=10,
+        help='log interval, one log per n updates (default: 10)')
+    parser.add_argument(
+        '--env-name',
+        default='doorenv-v0',
+        help='environment to train on (default: PongNoFrameskip-v4)')
+    parser.add_argument(
+        '--non-det',
+        action='store_true',
+        default=False,
+        help='whether to use a non-deterministic policy')
+    parser.add_argument(
+        '--load-name',
+        type=str,
+        default='',
+        help='which model to load')
+    parser.add_argument(
+        '--eval',
+        action='store_true',
+        default=False,
+        help="Measure the opening ratio among 100 trials")
+    parser.add_argument(
+        '--render',
+        action='store_true',
+        default=False,
+        help="force rendering")
+    parser.add_argument(
+        '--knob-noisy',
+        action='store_true',
+        default=False,
+        help='add noise to knob position to resemble the noise from the visionnet')
+    parser.add_argument(
+        '--visionnet-input',
+        action="store_true",
+        default=False,
+        help='Use vision net for knob position estimation')
+    parser.add_argument(
+        '--unity',
+        action="store_true",
+        default=False,
+        help='Use unity for an input of a vision net')
+    parser.add_argument(
+        '--port',
+        type=int,
+        default=1050,
+        help='Unity connection port (Only for off-policy)')
+    parser.add_argument(
+        '--visionmodel-path',
+        type=str,
+        default="./trained_visionmodel/",
+        help='load the replay buffer')
+    parser.add_argument(
+        '--world-path',
+        type=str,
+        default=os.path.join(os.getcwd(), "world_generator/world/pull_blue_floatinghook"),
+        help='load the vision network model')
+    parser.add_argument(
+        '--pos-control',
+        action="store_true",
+        default=False,
+        help='use pos control')
+    parser.add_argument(
+        '--step-skip',
+        type=int,
+        default=4,
+        help='number of step skip in pos control')
+    parser.add_argument(
+        '--task-id',
+        type=int,
+        required=True,
+        help='id of CL task to evaluate'  # TODO remove this for class CL later
+    )
+    args = parser.parse_args()
+
+    return args
