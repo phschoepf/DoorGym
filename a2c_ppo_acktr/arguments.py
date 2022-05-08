@@ -1,4 +1,6 @@
 import argparse
+import os
+
 import torch
 
 def get_args():
@@ -307,7 +309,7 @@ def get_args_enjoy():
     parser.add_argument(
         '--task-id',
         type=int,
-        required=True,
+        required=False,
         help='id of CL task to evaluate'  # TODO remove this for class CL later
     )
     args = parser.parse_args()
