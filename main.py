@@ -32,6 +32,10 @@ import doorenv
 import doorenv2
 
 from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork
+import logging
+
+logging.basicConfig(level='INFO')
+logger = logging.getLogger()
 
 def onpolicy_main():
     print("onpolicy main")
@@ -245,8 +249,8 @@ def onpolicy_main():
             for name, param in enumerate(agent.actor_critic.base.hnet.task_embs):
                 writer.add_histogram(f'emb.{name}', param.clone().detach().cpu().numpy(), j)
             # log histograms of target network weights
-            for name, param in agent.actor_critic.base.actor.named_parameters(prefix='actor'):
-                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
+            for name, param in enumerate(agent.actor_critic.base.actor.weights):
+                writer.add_histogram(f'actor.{name}', param.clone().detach().cpu().numpy(), j)
             for name, param in agent.actor_critic.base.critic.named_parameters(prefix='critic'):
                 writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
             for name, param in agent.actor_critic.base.dist.named_parameters(prefix='dist'):

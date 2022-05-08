@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from clfd.imitation_cl.model.hypernetwork import calc_delta_theta, calc_fix_target_reg, get_current_targets
+import logging
+logger = logging.getLogger()
 
 
 class PPO():
@@ -135,7 +137,8 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.theta_optimizer = optim.Adam(list(self.hnet.theta) + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
+        self.regularized_params = list(self.hnet.theta) + list(self.actor_critic.base.critic.parameters())
+        self.theta_optimizer = optim.Adam(self.regularized_params, lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -162,7 +165,7 @@ class HNPPO():
                 data_generator = rollouts.feed_forward_generator(
                     advantages, self.num_mini_batch)
 
-            for sample in data_generator:
+            for i, sample in enumerate(data_generator):
                 obs_batch, recurrent_hidden_states_batch, actions_batch, \
                    value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
                         adv_targ = sample
@@ -193,9 +196,10 @@ class HNPPO():
                 self.theta_optimizer.zero_grad()
                 self.emb_optimizer.zero_grad()
 
-                (value_loss * self.value_loss_coef + action_loss -
-                 dist_entropy * self.entropy_coef).backward()
-                nn.utils.clip_grad_norm_(self.hnet.parameters(), self.max_grad_norm)
+                loss = (value_loss * self.value_loss_coef + action_loss -
+                 dist_entropy * self.entropy_coef)
+                loss.backward(retain_graph=calc_reg, create_graph=False)
+                nn.utils.clip_grad_norm_(self.regularized_params + [self.hnet.get_task_emb(self.task_id)], self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()
@@ -225,6 +229,9 @@ class HNPPO():
 
                 # Update the hnet params using the current task loss and the regularization loss
                 self.theta_optimizer.step()
+
+                if i%64== 0:
+                    logger.info(f'epoch {e}, step {i}: loss =  {loss}')
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 
