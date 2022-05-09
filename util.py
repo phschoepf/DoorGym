@@ -6,11 +6,13 @@ from gym import wrappers
 
 from rlkit.envs.wrappers import NormalizedBoxEnv
 from rlkit.torch.networks import FlattenMlp, TanhMlpPolicy
-from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic
+from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic, TanhGaussianHnetPolicy
 from rlkit.exploration_strategies.base import PolicyWrappedWithExplorationStrategy
 from rlkit.exploration_strategies.gaussian_strategy import GaussianStrategy
 from rlkit.torch.sac.sac import SACTrainer
 from rlkit.torch.td3.td3 import TD3Trainer
+
+from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork, TargetNetwork
 
 
 def add_vision_noise(obs, epoch):
@@ -76,31 +78,35 @@ def prepare_env(env_name, visionmodel_path=None, **env_kwargs):
 
 
 def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_load, variant):
-    print("Preparing for {} trainer.".format(algorithm))
+    print(f"Preparing for {algorithm} trainer.")
     if algorithm == "SAC":
         if not pretrained_policy_load:
             M = variant['layer_size']
-            qf1 = FlattenMlp(
-                input_size=obs_dim + action_dim,
-                output_size=1,
-                hidden_sizes=[M, M],
-            )
-            qf2 = FlattenMlp(
-                input_size=obs_dim + action_dim,
-                output_size=1,
-                hidden_sizes=[M, M],
-            )
-            target_qf1 = FlattenMlp(
-                input_size=obs_dim + action_dim,
-                output_size=1,
-                hidden_sizes=[M, M],
-            )
-            target_qf2 = FlattenMlp(
-                input_size=obs_dim + action_dim,
-                output_size=1,
-                hidden_sizes=[M, M],
-            )
-            policy = TanhGaussianPolicy(
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            weight_shape_q = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
+            weight_shape_policy = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
+
+            hnet = HyperNetwork(weight_shape_q * 4,
+                                layers=[10 * M, 10 * M],
+                                te_dim=8,
+                                device=device)
+
+            gen_tnet = lambda: TargetNetwork(n_in=obs_dim + action_dim,
+                                             n_out=1,
+                                             hidden_layers=[M, M],
+                                             no_weights=True,
+                                             bn_track_stats=False,
+                                             activation_fn=torch.nn.ReLU(),
+                                             out_fn=None,
+                                             device=device)
+
+            # all these nets are the same architecture, but learn independently
+            qf1 = gen_tnet()
+            qf2 = gen_tnet()
+            target_qf1 = gen_tnet()
+            target_qf2 = gen_tnet()
+
+            policy = TanhGaussianHnetPolicy(
                 obs_dim=obs_dim,
                 action_dim=action_dim,
                 hidden_sizes=[M, M],
@@ -176,7 +182,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             expl_policy = exploration_policy
             eval_policy = policy
         else:
-            pass
+            raise NotImplementedError(f"Unkown algorithm {algorithm}")
 
         trainer = TD3Trainer(
             policy=policy,

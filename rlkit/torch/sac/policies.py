@@ -139,7 +139,7 @@ class MakeDeterministic(Policy):
                                                  deterministic=True)
 
 
-class TanhGaussianPolicy(Mlp, ExplorationPolicy):
+class TanhGaussianHnetPolicy(nn.Module, ExplorationPolicy):
     """
     Usage:
 
@@ -166,29 +166,53 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
             init_w=1e-3,
             **kwargs
     ):
-        super().__init__(
-            hidden_sizes,
-            input_size=obs_dim,
-            output_size=action_dim,
-            init_w=init_w,
-            **kwargs
-        )
+        super().__init__()
         self.visionnet_input = False
         self.visionmodel = None
         self.nn = 6
         self.knob_noisy = False
         self.log_std = None
         self.std = std
+
+        last_hidden_size = obs_dim
+        if len(hidden_sizes) > 0:
+            last_hidden_size = hidden_sizes[-1]
+
+        # Common layers
+        self.fcs = TargetNetwork(n_in=obs_dim,
+                                 n_out=last_hidden_size,
+                                 hidden_layers=hidden_sizes[:-1],
+                                 no_weights=True,
+                                 bn_track_stats=False,
+                                 activation_fn=torch.nn.ReLU(),
+                                 out_fn=torch.nn.ReLu(),
+                                 device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+
+        self.last_fc = TargetNetwork(n_in=last_hidden_size,
+                                     n_out=action_dim,
+                                     hidden_layers=[],
+                                     no_weights=True,
+                                     bn_track_stats=False,
+                                     activation_fn=None,
+                                     out_fn=None,
+                                     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         if std is None:
-            last_hidden_size = obs_dim
-            if len(hidden_sizes) > 0:
-                last_hidden_size = hidden_sizes[-1]
-            self.last_fc_log_std = nn.Linear(last_hidden_size, action_dim)
-            self.last_fc_log_std.weight.data.uniform_(-init_w, init_w)
-            self.last_fc_log_std.bias.data.uniform_(-init_w, init_w)
+            self.last_fc_log_std = TargetNetwork(n_in=last_hidden_size,
+                                                 n_out=action_dim,
+                                                 hidden_layers=[],
+                                                 no_weights=True,
+                                                 bn_track_stats=False,
+                                                 activation_fn=None,
+                                                 out_fn=None,
+                                                 device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         else:
             self.log_std = np.log(std)
             assert LOG_SIG_MIN <= self.log_std <= LOG_SIG_MAX
+
+    def set_weights(self, weights):
+        self.fcs.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[0]))
+        self.last_fc.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[1]))
+        self.last_fc_log_std.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[2]))
 
     def get_action(self, obs_np, deterministic=False):
         actions = self.get_actions(obs_np[None], deterministic=deterministic)
@@ -209,9 +233,7 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
         :param deterministic: If True, do not sample
         :param return_log_prob: If True, return a sample and its log probability
         """
-        h = obs
-        for i, fc in enumerate(self.fcs):
-            h = self.hidden_activation(fc(h))
+        h = self.fcs(obs)
         mean = self.last_fc(h)
         if self.std is None:
             log_std = self.last_fc_log_std(h)
