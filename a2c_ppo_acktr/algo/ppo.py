@@ -137,8 +137,7 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.regularized_params = list(self.hnet.theta)
-        self.theta_optimizer = optim.Adam(self.regularized_params, lr=lr, eps=eps)
+        self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -198,8 +197,8 @@ class HNPPO():
 
                 loss = (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef)
-                loss.backward(retain_graph=calc_reg, create_graph=False)
-                nn.utils.clip_grad_norm_(self.regularized_params + [self.hnet.get_task_emb(self.task_id)], self.max_grad_norm)
+                loss.backward()
+                nn.utils.clip_grad_norm_(self.hnet.parameters(), self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()

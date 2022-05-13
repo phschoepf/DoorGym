@@ -306,6 +306,7 @@ class HNBase(NNBase):
                          out_fn=torch.nn.Tanh(),
                          device=device)
 
+        # critic_linear was integrated into the main critic network here so all learnable params are inside HNs
         self.critic = TargetNetwork(
             n_in=num_inputs,
             n_out=1,
@@ -357,8 +358,8 @@ class HNBase(NNBase):
     def forward(self, inputs, rnn_hxs, masks):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
         generated_weights = self.hnet(self.active_task)
-        self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
         self.critic.set_weights(generated_weights[len(self.output_dims_a):len(self.output_dims_a) + len(self.output_dims_c)])
+        self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
         self.dist.set_weights(generated_weights[len(self.output_dims_a) + len(self.output_dims_c):])
 
         hidden_critic = self.critic(inputs)

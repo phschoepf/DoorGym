@@ -100,10 +100,13 @@ class FunctionalDiagGaussian(nn.Module):
     def set_weights(self, weights):
         assert len(weights) == 3
         # dict for clarity
-        self.weights = nn.ParameterList(nn.Parameter(weight) for weight in weights)
+        self.weights = {'fc_weight': weights[0],
+                        'fc_bias': weights[1],
+                        'logstd_bias': weights[2].unsqueeze(1)
+                        }
 
     def forward(self, x):
-        action_mean = F.linear(x, self.weights[0], bias=self.weights[1])
+        action_mean = F.linear(x, self.weights['fc_weight'], bias=self.weights['fc_bias'])
 
         #  An ugly hack for my KFAC implementation.
         zeros = torch.zeros(action_mean.size())
@@ -113,9 +116,9 @@ class FunctionalDiagGaussian(nn.Module):
 
         # stuff from AddBias directly put here
         if action_mean.dim() == 2:
-            bias = self.weights[2].t().view(1, -1)
+            bias = self.weights['logstd_bias'].t().view(1, -1)
         else:
-            bias = self.weights[2].t().view(1, -1, 1, 1)
+            bias = self.weights['logstd_bias'].t().view(1, -1, 1, 1)
 
         action_logstd = zeros + bias
         return FixedNormal(action_mean, action_logstd.exp())
