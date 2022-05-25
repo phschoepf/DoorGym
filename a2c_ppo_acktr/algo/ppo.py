@@ -137,6 +137,12 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
+        # calculate targets of past tasks for regularization
+        if self.beta > 0:
+            self.targets = get_current_targets(self.task_id, self.hnet)
+        else:
+            self.targets = None
+
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
@@ -151,10 +157,6 @@ class HNPPO():
         dist_entropy_epoch = 0
 
         calc_reg = self.task_id > 0 and self.beta > 0
-        if self.beta > 0:
-            targets = get_current_targets(self.task_id, self.hnet)
-        else:
-            targets = None
 
         for e in range(self.ppo_epoch):
             if self.actor_critic.is_recurrent:
@@ -197,8 +199,8 @@ class HNPPO():
 
                 loss = (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef)
-                loss.backward()
-                nn.utils.clip_grad_norm_(self.hnet.parameters(), self.max_grad_norm)
+                loss.backward(retain_graph=calc_reg, create_graph=False)
+                nn.utils.clip_grad_norm_(list(self.hnet.theta) + [self.hnet.get_task_emb(self.task_id)], self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()
@@ -218,7 +220,7 @@ class HNPPO():
 
                     # Calculate the regularization loss using dTheta
                     # This implements the second part of equation 2
-                    loss_reg = calc_fix_target_reg(self.hnet, self.task_id, targets=targets, dTheta=dTheta)
+                    loss_reg = calc_fix_target_reg(self.hnet, self.task_id, targets=self.targets, dTheta=dTheta)
 
                     # Multiply the regularization loss with the scaling factor
                     loss_reg *= self.beta
