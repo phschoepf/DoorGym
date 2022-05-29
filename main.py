@@ -247,9 +247,11 @@ def onpolicy_main():
                 writer.add_histogram(f'emb.{name}', param.clone().detach().cpu().numpy(), j)
             for name, param in enumerate(agent.actor_critic.base.actor.weights):
                 writer.add_histogram(f'actor.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in enumerate(agent.actor_critic.base.critic.weights):
+            for name, param in agent.actor_critic.base.critic.named_parameters():
                 writer.add_histogram(f'critic.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, (key, param) in enumerate(agent.actor_critic.base.dist.weights.items()):
+            for name, param in agent.actor_critic.base.critic_linear.named_parameters():
+                writer.add_histogram(f'critic_linear.{name}', param.clone().detach().cpu().numpy(), j)
+            for name, param in agent.actor_critic.dist.named_parameters():
                 writer.add_histogram(f'dist.{name}', param.clone().detach().cpu().numpy(), j)
 
         # save for every interval-th episode or for the last epoch

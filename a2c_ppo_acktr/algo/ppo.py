@@ -144,6 +144,7 @@ class HNPPO():
             self.targets = None
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
+        self.nonreg_optimizer = optim.Adam(list(self.actor_critic.dist.parameters()) + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -195,12 +196,13 @@ class HNPPO():
                     value_loss = 0.5 * (return_batch - values).pow(2).mean()
 
                 self.theta_optimizer.zero_grad()
+                self.nonreg_optimizer.zero_grad()
                 self.emb_optimizer.zero_grad()
 
                 loss = (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef)
                 loss.backward(retain_graph=calc_reg, create_graph=False)
-                nn.utils.clip_grad_norm_(list(self.hnet.theta) + [self.hnet.get_task_emb(self.task_id)], self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()
@@ -230,6 +232,7 @@ class HNPPO():
 
                 # Update the hnet params using the current task loss and the regularization loss
                 self.theta_optimizer.step()
+                self.nonreg_optimizer.step()
 
                 if i%64== 0:
                     logger.info(f'epoch {e}, step {i}: loss =  {loss}')
