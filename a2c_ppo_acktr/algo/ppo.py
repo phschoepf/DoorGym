@@ -185,15 +185,10 @@ class HNPPO():
                 action_loss = -torch.min(surr1, surr2).mean()
 
                 if self.use_clipped_value_loss:
-                    value_pred_clipped = value_preds_batch + \
-                        (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
-                    value_losses = (values - return_batch).pow(2)
-                    value_losses_clipped = (
-                        value_pred_clipped - return_batch).pow(2)
-                    value_loss = 0.5 * torch.max(value_losses,
-                                                 value_losses_clipped).mean()
+                    values_pred = value_preds_batch + (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
                 else:
-                    value_loss = 0.5 * (return_batch - values).pow(2).mean()
+                    values_pred = values
+                value_loss = 0.5 * F.mse_loss(return_batch, values_pred)
 
                 self.theta_optimizer.zero_grad()
                 self.nonreg_optimizer.zero_grad()
