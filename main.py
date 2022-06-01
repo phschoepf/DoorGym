@@ -145,7 +145,8 @@ def onpolicy_main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm,
-            task_id=args.task_id)
+            task_id=args.task_id,
+            beta=args.beta)
     else:
         raise ValueError(f"Unknown algo {args.algo}")
 

@@ -110,11 +110,12 @@ class HNPPO():
                  value_loss_coef,
                  entropy_coef,
                  task_id: int,
+                 beta: float,
                  lr=None,
                  eps=None,
                  max_grad_norm=None,
                  use_clipped_value_loss=True,
-                 beta=5e-3):
+                 ):
 
         assert actor_critic.base.__class__.__name__ == "HNBase"
         self.actor_critic = actor_critic
