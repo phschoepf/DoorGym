@@ -102,25 +102,12 @@ class FunctionalDiagGaussian(nn.Module):
         # dict for clarity
         self.weights = {'fc_weight': weights[0],
                         'fc_bias': weights[1],
-                        'logstd_bias': weights[2].unsqueeze(1)
+                        'logstd_bias': weights[2]
                         }
 
     def forward(self, x):
         action_mean = F.linear(x, self.weights['fc_weight'], bias=self.weights['fc_bias'])
-
-        #  An ugly hack for my KFAC implementation.
-        zeros = torch.zeros(action_mean.size())
-        if x.is_cuda:
-            device = x.get_device()
-            zeros = zeros.to(device)
-
-        # stuff from AddBias directly put here
-        if action_mean.dim() == 2:
-            bias = self.weights['logstd_bias'].t().view(1, -1)
-        else:
-            bias = self.weights['logstd_bias'].t().view(1, -1, 1, 1)
-
-        action_logstd = zeros + bias
+        action_logstd = self.weights['logstd_bias']
         return FixedNormal(action_mean, action_logstd.exp())
 
 
