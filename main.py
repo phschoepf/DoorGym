@@ -6,6 +6,7 @@ import pickle
 from collections import deque
 import gym
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -49,6 +50,10 @@ def onpolicy_main():
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
     writer = SummaryWriter(os.path.join(args.log_dir, args.algo, f'{args.env_name}_{args.save_name}'))
+    writer.add_text('hyperparameters',
+                    pd.DataFrame([[key, str(value)] for key, value in args.__dict__.items()], columns=['param', 'value'])
+                    .to_markdown())
+    writer.flush()
 
     # Make vector env
     envs = make_vec_envs(args.env_name,
