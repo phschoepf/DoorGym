@@ -249,9 +249,7 @@ def onpolicy_main():
                 writer.add_histogram(f'actor.{name}', param.clone().detach().cpu().numpy(), j)
             for name, param in agent.actor_critic.base.critic.named_parameters():
                 writer.add_histogram(f'critic.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in agent.actor_critic.base.critic_linear.named_parameters():
-                writer.add_histogram(f'critic_linear.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in agent.actor_critic.dist.named_parameters():
+            for name, param in agent.actor_critic.base.dist.weights.items():
                 writer.add_histogram(f'dist.{name}', param.clone().detach().cpu().numpy(), j)
 
         # save for every interval-th episode or for the last epoch

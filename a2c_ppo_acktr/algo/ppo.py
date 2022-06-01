@@ -144,7 +144,7 @@ class HNPPO():
             self.targets = None
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
-        self.nonreg_optimizer = optim.Adam(list(self.actor_critic.dist.parameters()) + list(self.actor_critic.base.critic.parameters()), lr=lr, eps=eps)
+        self.nonreg_optimizer = optim.Adam(self.actor_critic.base.critic.parameters(), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -202,7 +202,9 @@ class HNPPO():
                 loss = (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef)
                 loss.backward(retain_graph=calc_reg, create_graph=False)
-                nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(list(self.hnet.theta) +
+                                         [self.hnet.get_task_emb(self.task_id)] +
+                                         list(self.actor_critic.base.critic.parameters()) , self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()

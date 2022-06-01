@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from torch.nn.parameter import Parameter
 from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork, TargetNetwork
 
-from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
+from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian, FunctionalDiagGaussian
 from a2c_ppo_acktr.utils import init
 
 logits_input = False
@@ -38,17 +38,22 @@ class Policy(nn.Module):
         self.knob_target_hist = torch.zeros(1,3).cuda()
         self.base = base(obs_shape[0], **base_kwargs)
 
-        if action_space.__class__.__name__ == "Discrete":
-            num_outputs = action_space.n
-            self.dist = Categorical(self.base.output_size, num_outputs)
-        elif action_space.__class__.__name__ == "Box":  # this is being used in doorenv-v0
-            num_outputs = action_space.shape[0]
-            self.dist = DiagGaussian(self.base.output_size, num_outputs)
-        elif action_space.__class__.__name__ == "MultiBinary":
-            num_outputs = action_space.shape[0]
-            self.dist = Bernoulli(self.base.output_size, num_outputs)
+        if type(self.base) == HNBase:
+            if not action_space.__class__.__name__ == "Box":
+                raise NotImplementedError("Hypernetwork dist only implemented for Box")
+            self.dist = self.base.dist
         else:
-            raise NotImplementedError
+            if action_space.__class__.__name__ == "Discrete":
+                num_outputs = action_space.n
+                self.dist = Categorical(self.base.output_size, num_outputs)
+            elif action_space.__class__.__name__ == "Box":  # this is being used in doorenv-v0
+                num_outputs = action_space.shape[0]
+                self.dist = DiagGaussian(self.base.output_size, num_outputs)
+            elif action_space.__class__.__name__ == "MultiBinary":
+                num_outputs = action_space.shape[0]
+                self.dist = Bernoulli(self.base.output_size, num_outputs)
+            else:
+                raise NotImplementedError
 
     @property
     def is_recurrent(self):
@@ -249,10 +254,11 @@ class HNBase(NNBase):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size])
         num_outputs = action_space.shape[0]
+        self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
         # Common param dict for the hypernetwork. We filter what we need for the particular hypernetwork types.
         hparams = {
-            'target_shapes': self.output_dims_a,
+            'target_shapes': self.output_dims_a + self.output_dims_dist,
             'layers': [hidden_size * 10, hidden_size * 10],
             'te_dim': 8,
             'chunk_dim': 1000,
@@ -292,9 +298,11 @@ class HNBase(NNBase):
         # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
         self.critic = nn.Sequential(
             init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, 1)))
 
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
+        # dist was also moved here from policy so we can populate it with weights from the HN
+        self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
 
         self.tasks_trained = 0
         self.active_task = None
@@ -326,11 +334,13 @@ class HNBase(NNBase):
         self.active_task = task_id
 
     def forward(self, inputs, rnn_hxs, masks):
-        # generate weights for actor network
-        self.actor.set_weights(self.hnet(self.active_task))
+        # generate weights for both networks, as a list, then split the list to populate the networks' parameters
+        generated_weights = self.hnet(self.active_task)
+        self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
+        self.dist.set_weights(generated_weights[len(self.output_dims_a):])
 
         hidden_critic = self.critic(inputs)
         hidden_actor, _ = self.actor(inputs)
         # we do not forward the dist here, this is done in Policy.act()
 
-        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+        return hidden_critic, hidden_actor, rnn_hxs
