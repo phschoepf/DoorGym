@@ -248,7 +248,7 @@ class SACTrainer(TorchTrainer):
         )
 
 
-class HNSACTrainer(SACTrainer):
+class HNSACTrainer(TorchTrainer):
     def __init__(
             self,
             env,
@@ -259,6 +259,7 @@ class HNSACTrainer(SACTrainer):
             qf2,
             target_qf1,
             target_qf2,
+            task_id: int,
             beta: int = 5e-3,
 
             discount=0.99,
@@ -278,38 +279,64 @@ class HNSACTrainer(SACTrainer):
             log_alpha=None,
             alpha_optimizer=None,
     ):
-        super().__init__(
-            env,
-            policy,
-            qf1,
-            qf2,
-            target_qf1,
-            target_qf2,
+        super().__init__()
+        self.env = env
+        self.policy = policy
+        self.qf1 = qf1
+        self.qf2 = qf2
+        self.target_qf1 = target_qf1
+        self.target_qf2 = target_qf2
+        self.soft_target_tau = soft_target_tau
+        self.target_update_period = target_update_period
+        self.target_entropy = target_entropy
 
-            discount=discount,
-            reward_scale=reward_scale,
+        self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
+        if log_alpha:
+            print(log_alpha._grad)
+            # self.log_alpha = ptu.ones(1, requires_grad=True)
+            # self.log_alpha = ptu.ones(1, requires_grad=True) * log_alpha.item()
+            self.log_alpha = log_alpha
+            print("trained log_alpha has been loaded",log_alpha, " alpha:",self.log_alpha.exp())
+        else:
+            self.log_alpha = ptu.zeros(1, requires_grad=True)
 
-            policy_lr=policy_lr,
-            qf_lr=qf_lr,
-            optimizer_class=optimizer_class,
+        if self.use_automatic_entropy_tuning:
+            if target_entropy:
+                self.target_entropy = target_entropy
+            else:
+                self.target_entropy = -np.prod(self.env.action_space.shape).item()  # heuristic value from Tuomas
+            self.alpha_optimizer = optimizer_class(
+                [self.log_alpha],
+                lr=policy_lr,
+            )
+            # print(self.alpha_optimizer)
+            if alpha_optimizer:
+                self.alpha_optimizer.load_state_dict(alpha_optimizer.state_dict())
+        else:
+            self.alpha_optimizer = alpha_optimizer
 
-            soft_target_tau=soft_target_tau,
-            target_update_period=target_update_period,
-            plotter=plotter,
-            render_eval_paths=render_eval_paths,
+        self.plotter = plotter
+        self.render_eval_paths = render_eval_paths
 
-            use_automatic_entropy_tuning=use_automatic_entropy_tuning,
-            target_entropy=target_entropy,
-            log_alpha=log_alpha,
-            alpha_optimizer=alpha_optimizer,
-        )
+        self.qf_criterion = nn.MSELoss()
+        self.vf_criterion = nn.MSELoss()
+
+        self.discount = discount
+        self.reward_scale = reward_scale
+        self.eval_statistics = OrderedDict()
+        self._n_train_steps_total = 0
+        self._need_to_update_eval_statistics = True
 
         self.policy_lr = policy_lr
         self.qf_lr = qf_lr
         self.hnet = hnet
         self.weight_shapes = weight_shapes  # dict of the target network shapes
-        self.task_id = None                # id of the active task
+        self.task_id = task_id  # id of the active task
         self.beta = beta
+
+        # generate new task embeddings if the task has not been seen by the HNs before
+        if self.task_id > self.tasks_trained - 1:
+            self.add_task()
 
         # calculate targets of past tasks for regularization
         if self.beta > 0:
@@ -320,6 +347,12 @@ class HNSACTrainer(SACTrainer):
         self.theta_optimizer = optimizer_class(list(self.hnet.theta), lr=policy_lr) # TODO different learning rates for policy and qf?
         # self.nonreg_optimizer = optimizer_class(list(self.qf1.parameters()) + list(self.qf2.parameters()), lr=qf_lr) # TODO for non-hnet qf (maybe later)
         self.emb_optimizer = optimizer_class([self.hnet.get_task_emb(self.task_id)], lr=policy_lr)
+
+        # initialize target weights
+        self._update_tnet_weights()
+        # use tau=1 soft update to copy qf weights to target_qf nets
+        ptu.soft_update_from_to_tnet(self.qf1, self.target_qf1, tau=1)
+        ptu.soft_update_from_to_tnet(self.qf2, self.target_qf2, tau=1)
 
     @property
     def tasks_trained(self):
@@ -337,9 +370,20 @@ class HNSACTrainer(SACTrainer):
 
     def set_active_task(self, task_id: int):
         self.task_id = task_id
-        # generate new task embeddings if the task has not been seen by the HNs before
-        if self.task_id > self.tasks_trained - 1:
-            self.add_task()
+
+    def _update_tnet_weights(self):
+        """Forward the hnet to get weights and feed the weights into all target networks"""
+        generated_weights = self.hnet(self.task_id)
+        # slice the weight list into chunks for each target network that the hnet manages
+        sliced_weights = {}
+        index = 0
+        for key, shape in self.weight_shapes.items():
+            sliced_weights[key] = generated_weights[index:index + len(shape)]
+            index += len(shape)
+
+        self.qf1.set_weights(sliced_weights['qf1'])
+        self.qf2.set_weights(sliced_weights['qf2'])
+        self.policy.set_weights([sliced_weights['fcs'], sliced_weights['last_fc'], sliced_weights['last_fc_logstd']])
 
     def train_from_torch(self, batch):
         rewards = batch['rewards']
@@ -353,17 +397,7 @@ class HNSACTrainer(SACTrainer):
         """
         Set target network weights
         """
-        generated_weights = self.hnet(self.task_id)
-        # slice the weight list into chunks for each target network that the hnet manages
-        sliced_weights = {}
-        index = 0
-        for key, shape in self.weight_shapes.items():
-            sliced_weights[key] = generated_weights[index:index+len(shape)]
-            index += len(shape)
-
-        self.qf1.set_weights(sliced_weights['qf1'])
-        self.qf2.set_weights(sliced_weights['qf2'])
-        self.policy.set_weights([sliced_weights['fcs'], sliced_weights['last_fc'], sliced_weights['last_fc_logstd']])
+        self._update_tnet_weights()
 
         """
         Policy and Alpha Loss
@@ -500,15 +534,32 @@ class HNSACTrainer(SACTrainer):
             # self.eval_statistics['Target Entropy'] = self.target_entropy
         self._n_train_steps_total += 1
 
+    def get_diagnostics(self):
+        return self.eval_statistics
+
+    def end_epoch(self, epoch):
+        self._need_to_update_eval_statistics = True
+
     @property
     def networks(self):
-        return super().networks + [self.hnet]
+        return [
+            self.hnet,
+            self.policy,
+            self.qf1,
+            self.qf2,
+            self.target_qf1,
+            self.target_qf2,
+        ]
 
     def get_snapshot(self):
-        snapshot = dict(hnet=self.hnet,
-                        weight_shapes=self.weight_shapes,
-                        )
-        # merge with snapshot from superclass
-        super_snapshot = super().get_snapshot()
-        super_snapshot.update(snapshot)
-        return super_snapshot
+        return dict(
+            hnet=self.hnet,
+            weight_shapes=self.weight_shapes,
+            policy=self.policy,
+            qf1=self.qf1,
+            qf2=self.qf2,
+            target_qf1=self.qf1,
+            target_qf2=self.qf2,
+            log_alpha=self.log_alpha,
+            alpha_optimizer=self.alpha_optimizer,
+        )
