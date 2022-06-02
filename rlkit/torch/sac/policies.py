@@ -210,6 +210,13 @@ class TanhGaussianHnetPolicy(nn.Module, ExplorationPolicy):
             assert LOG_SIG_MIN <= self.log_std <= LOG_SIG_MAX
 
     def set_weights(self, weights):
+        """
+        Set weights of the policy's target networks. 3 weights must be provided:
+
+        * fcs_weights [[obs_dim x hidden_size] ..layers.. [hidden_size]]
+        * last_fc_weights [[hidden_size x action_dim], [action_dim]]
+        * last_fc_logstd_weights [[hidden_size x action_dim], [action_dim]]
+        """
         self.fcs.set_weights(weights[0])
         self.last_fc.set_weights(weights[1])
         self.last_fc_log_std.set_weights(weights[2])

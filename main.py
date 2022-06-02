@@ -497,8 +497,10 @@ if __name__ == "__main__":
                 qf_lr=1E-3,
                 reward_scale=0.1,
                 use_automatic_entropy_tuning=True,
+                beta=args.beta,
             ),
             replay_buffer_size=int(1E6),
+            task_id=args.task_id
         )
         offpolicy_main(variant)
 

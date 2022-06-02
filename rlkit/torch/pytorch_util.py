@@ -9,6 +9,14 @@ def soft_update_from_to(source, target, tau):
         )
 
 
+def soft_update_from_to_tnet(source, target, tau):
+    """Soft update for bare tensor weights such as in the clfd.TargetNetwork"""
+    for target_param, param in zip(target.weights, source.weights):
+        target_param.copy_(
+            target_param * (1.0 - tau) + param * tau
+        )
+
+
 def copy_model_params_from_to(source, target):
     for target_param, param in zip(target.parameters(), source.parameters()):
         target_param.data.copy_(param.data)

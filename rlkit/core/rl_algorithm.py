@@ -93,13 +93,12 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
 
         ####################################
         if (epoch % self.save_interval == 0) and self.save_dir != "":
-            save_path = os.path.join(self.save_dir, self.algo)
+            save_path = os.path.join(self.save_dir, self.algo, f"{self.env_name}_{self.save_name}")
             try:
                 os.makedirs(save_path)
             except OSError:
                 pass
-            torch.save(snapshot,
-            os.path.join(save_path, self.env_name + "_{}.{}.pt".format(self.save_name,epoch)))
+            torch.save(snapshot, os.path.join(save_path, f"{self.save_name}.{epoch}.pt"))
 
         replaybuffer_save = False
         if replaybuffer_save:

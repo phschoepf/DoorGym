@@ -138,17 +138,28 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
         if not pretrained_policy_load:
             M = variant['layer_size']
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            weight_shape_q = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
-            weight_shape_policy = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
+            hidden_layers = [M, M]
+            weight_shapes = dict(q1=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
+                                 q2=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
+                                 fcs=TargetNetwork.weight_shapes(n_in=obs_dim, n_out=hidden_layers[-1], hidden_layers=hidden_layers[:-1]),
+                                 last_fc=TargetNetwork.weight_shapes(n_in=hidden_layers[-1], n_out=action_dim, hidden_layers=[]),
+                                 last_fc_logstd=TargetNetwork.weight_shapes(n_in=hidden_layers[-1], n_out=action_dim, hidden_layers=[])
+                                 )
 
-            hnet = HyperNetwork(weight_shape_q * 4,
+            # the all-knowing hypernetwork
+            # encompasses all Q-functions, and the 3 policy parts: common fc layers, mean head and logstd head
+            hnet = HyperNetwork(weight_shapes['q1'] +
+                                weight_shapes['q2'] +
+                                weight_shapes['policy_fcs'] +
+                                weight_shapes['policy_last_fc'] +
+                                weight_shapes['policy_last_fc_logstd'],
                                 layers=[10 * M, 10 * M],
                                 te_dim=8,
                                 device=device)
 
             gen_tnet = lambda: TargetNetwork(n_in=obs_dim + action_dim,
                                              n_out=1,
-                                             hidden_layers=[M, M],
+                                             hidden_layers=hidden_layers,
                                              no_weights=True,
                                              bn_track_stats=False,
                                              activation_fn=torch.nn.ReLU(),
@@ -164,10 +175,12 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             policy = TanhGaussianHnetPolicy(
                 obs_dim=obs_dim,
                 action_dim=action_dim,
-                hidden_sizes=[M, M],
+                hidden_sizes=hidden_layers,
             )
         else:
             snapshot = torch.load(pretrained_policy_load)
+            hnet = snapshot['trainer/hnet']
+            weight_shapes = snapshot['trainer/weight_shapes']
             qf1 = snapshot['trainer/qf1']
             qf2 = snapshot['trainer/qf2']
             target_qf1 = snapshot['trainer/target_qf1']
@@ -185,6 +198,8 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
 
         trainer = HNSACTrainer(
             env=expl_env,
+            hnet=hnet,
+            weight_shapes=weight_shapes,
             policy=policy,
             qf1=qf1,
             qf2=qf2,
@@ -192,6 +207,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             target_qf2=target_qf2,
             **variant['trainer_kwargs']
         )
+        trainer.set_active_task(variant['task_id'])
 
     elif algorithm == "td3":
         if not pretrained_policy_load:
