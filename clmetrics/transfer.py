@@ -35,10 +35,13 @@ def make_accuracy_matrix():
         # iterate over checkpoint files
         checkpoint_to_load = os.path.join(folder,
                                           sorted(os.listdir(folder))[-1])  # get the latest checkpoint from the folder
-        world_to_load = os.path.join(args.world_path, world)
 
         for eval_tid in range(len(experiments)):
             # iterate over tasks
+
+            # load the world corresponding to this task
+            world_to_load = os.path.join(args.world_path, experiments[eval_tid][1])
+
             # we can't give tids higher than the train_tid to enjoy.py, thus we clip it to the highest tid for all other tasks
             # evaluating on not-yet-trained tasks can reveal zero-shot capabilities
             tid_to_evaluate = min(train_tid, eval_tid)

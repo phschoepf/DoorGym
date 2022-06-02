@@ -38,6 +38,9 @@ import logging
 logging.basicConfig(level='WARN')
 logger = logging.getLogger()
 
+### DEBUG ###
+# torch.autograd.set_detect_anomaly(True)
+
 def onpolicy_main():
     print("onpolicy main")
 

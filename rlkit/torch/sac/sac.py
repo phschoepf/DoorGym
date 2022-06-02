@@ -350,7 +350,6 @@ class HNSACTrainer(TorchTrainer):
 
         # initialize target weights
         self._update_tnet_weights(initialize=True)
-        # use tau=1 soft update to copy qf weights to target_qf nets
 
     @property
     def tasks_trained(self):
@@ -453,9 +452,10 @@ class HNSACTrainer(TorchTrainer):
         #self.nonreg_optimizer.zero_grad()
         self.emb_optimizer.zero_grad()
 
-        qf1_loss.backward(retain_graph=calc_reg, create_graph=False)
-        qf2_loss.backward(retain_graph=calc_reg, create_graph=False)
-        policy_loss.backward(retain_graph=calc_reg, create_graph=False)
+        # retain_graph has to be true since the computational graphs are connected via the hnet
+        qf1_loss.backward(retain_graph=True, create_graph=False)
+        qf2_loss.backward(retain_graph=True, create_graph=False)
+        policy_loss.backward(retain_graph=True, create_graph=False)
 
         self.emb_optimizer.step()
 
