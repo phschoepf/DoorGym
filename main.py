@@ -6,6 +6,7 @@ import pickle
 from collections import deque
 import gym
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -34,7 +35,7 @@ import doorenv2
 from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork
 import logging
 
-logging.basicConfig(level='INFO')
+logging.basicConfig(level='WARN')
 logger = logging.getLogger()
 
 def onpolicy_main():
@@ -49,6 +50,10 @@ def onpolicy_main():
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
     writer = SummaryWriter(os.path.join(args.log_dir, args.algo, f'{args.env_name}_{args.save_name}'))
+    writer.add_text('hyperparameters',
+                    pd.DataFrame([[key, str(value)] for key, value in args.__dict__.items()], columns=['param', 'value'])
+                    .to_markdown())
+    writer.flush()
 
     # Make vector env
     envs = make_vec_envs(args.env_name,
@@ -140,7 +145,8 @@ def onpolicy_main():
             lr=args.lr,
             eps=args.eps,
             max_grad_norm=args.max_grad_norm,
-            task_id=args.task_id)
+            task_id=args.task_id,
+            beta=args.beta)
     else:
         raise ValueError(f"Unknown algo {args.algo}")
 
@@ -242,19 +248,15 @@ def onpolicy_main():
         writer.add_scalar("dist entropy loss", dist_entropy, j)
         writer.add_scalar("Episode rewards", np.mean(episode_rewards), j)
         if isinstance(agent.actor_critic.base, HNBase):
-            # log embeddings to see how they change with the task
-            all_embs = torch.cat([emb.clone().cpu().data.expand(1,-1) for emb in agent.actor_critic.base.hnet.task_embs])
-            # writer.add_embedding(mat=all_embs, tag=f'hnet.embeddings', global_step=j)
-
+            # log target networks' weights
             for name, param in enumerate(agent.actor_critic.base.hnet.task_embs):
                 writer.add_histogram(f'emb.{name}', param.clone().detach().cpu().numpy(), j)
-            # log histograms of target network weights
             for name, param in enumerate(agent.actor_critic.base.actor.weights):
                 writer.add_histogram(f'actor.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in enumerate(agent.actor_critic.base.critic.weights):
+            for name, param in agent.actor_critic.base.critic.named_parameters():
                 writer.add_histogram(f'critic.{name}', param.clone().detach().cpu().numpy(), j)
-            for name, param in agent.actor_critic.base.dist.named_parameters(prefix='dist'):
-                writer.add_histogram(name, param.clone().cpu().data.numpy(), j)
+            for name, param in agent.actor_critic.base.dist.weights.items():
+                writer.add_histogram(f'dist.{name}', param.clone().detach().cpu().numpy(), j)
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0

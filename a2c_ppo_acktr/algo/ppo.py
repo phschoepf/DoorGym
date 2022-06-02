@@ -110,11 +110,12 @@ class HNPPO():
                  value_loss_coef,
                  entropy_coef,
                  task_id: int,
+                 beta: float,
                  lr=None,
                  eps=None,
                  max_grad_norm=None,
                  use_clipped_value_loss=True,
-                 beta=5e-3):
+                 ):
 
         assert actor_critic.base.__class__.__name__ == "HNBase"
         self.actor_critic = actor_critic
@@ -137,8 +138,14 @@ class HNPPO():
         if self.task_id > actor_critic.base.tasks_trained - 1:
             actor_critic.base.add_task()
 
-        self.regularized_params = list(self.hnet.theta)
-        self.theta_optimizer = optim.Adam(self.regularized_params, lr=lr, eps=eps)
+        # calculate targets of past tasks for regularization
+        if self.beta > 0:
+            self.targets = get_current_targets(self.task_id, self.hnet)
+        else:
+            self.targets = None
+
+        self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
+        self.nonreg_optimizer = optim.Adam(self.actor_critic.base.critic.parameters(), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -152,10 +159,6 @@ class HNPPO():
         dist_entropy_epoch = 0
 
         calc_reg = self.task_id > 0 and self.beta > 0
-        if self.beta > 0:
-            targets = get_current_targets(self.task_id, self.hnet)
-        else:
-            targets = None
 
         for e in range(self.ppo_epoch):
             if self.actor_critic.is_recurrent:
@@ -183,23 +186,21 @@ class HNPPO():
                 action_loss = -torch.min(surr1, surr2).mean()
 
                 if self.use_clipped_value_loss:
-                    value_pred_clipped = value_preds_batch + \
-                        (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
-                    value_losses = (values - return_batch).pow(2)
-                    value_losses_clipped = (
-                        value_pred_clipped - return_batch).pow(2)
-                    value_loss = 0.5 * torch.max(value_losses,
-                                                 value_losses_clipped).mean()
+                    values_pred = value_preds_batch + (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
                 else:
-                    value_loss = 0.5 * (return_batch - values).pow(2).mean()
+                    values_pred = values
+                value_loss = 0.5 * F.mse_loss(return_batch, values_pred)
 
                 self.theta_optimizer.zero_grad()
+                self.nonreg_optimizer.zero_grad()
                 self.emb_optimizer.zero_grad()
 
                 loss = (value_loss * self.value_loss_coef + action_loss -
                  dist_entropy * self.entropy_coef)
                 loss.backward(retain_graph=calc_reg, create_graph=False)
-                nn.utils.clip_grad_norm_(self.regularized_params + [self.hnet.get_task_emb(self.task_id)], self.max_grad_norm)
+                nn.utils.clip_grad_norm_(list(self.hnet.theta) +
+                                         [self.hnet.get_task_emb(self.task_id)] +
+                                         list(self.actor_critic.base.critic.parameters()) , self.max_grad_norm)
                 self.emb_optimizer.step()
 
                 value_loss_epoch += value_loss.item()
@@ -219,7 +220,7 @@ class HNPPO():
 
                     # Calculate the regularization loss using dTheta
                     # This implements the second part of equation 2
-                    loss_reg = calc_fix_target_reg(self.hnet, self.task_id, targets=targets, dTheta=dTheta)
+                    loss_reg = calc_fix_target_reg(self.hnet, self.task_id, targets=self.targets, dTheta=dTheta)
 
                     # Multiply the regularization loss with the scaling factor
                     loss_reg *= self.beta
@@ -229,6 +230,7 @@ class HNPPO():
 
                 # Update the hnet params using the current task loss and the regularization loss
                 self.theta_optimizer.step()
+                self.nonreg_optimizer.step()
 
                 if i%64== 0:
                     logger.info(f'epoch {e}, step {i}: loss =  {loss}')

@@ -20,6 +20,11 @@ def get_args():
         default=0.99,
         help='RMSprop optimizer apha (default: 0.99)')
     parser.add_argument(
+        '--beta',
+        type=float,
+        default=5e-3,
+        help='hypernetwork regularization coefficient (default: 5e-3')
+    parser.add_argument(
         '--gamma',
         type=float,
         default=0.99,

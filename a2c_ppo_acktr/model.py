@@ -38,7 +38,7 @@ class Policy(nn.Module):
         self.knob_target_hist = torch.zeros(1,3).cuda()
         self.base = base(obs_shape[0], **base_kwargs)
 
-        if type(base) == HNBase:
+        if type(self.base) == HNBase:
             if not action_space.__class__.__name__ == "Box":
                 raise NotImplementedError("Hypernetwork dist only implemented for Box")
             self.dist = self.base.dist
@@ -69,10 +69,6 @@ class Policy(nn.Module):
 
     def act(self, inputs, rnn_hxs, masks, deterministic=False):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
-
-        # for some reason we have to do this assignment each time before calling it
-        if hasattr(self.base, 'dist'):
-            self.dist = self.base.dist
         dist = self.dist(actor_features)
 
         if deterministic:
@@ -91,10 +87,6 @@ class Policy(nn.Module):
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
-
-        # for some reason we have to do this assignment each time before calling it
-        if hasattr(self.base, 'dist'):
-            self.dist = self.base.dist
         dist = self.dist(actor_features)
 
         action_log_probs = dist.log_probs(action)
@@ -260,16 +252,13 @@ class HNBase(NNBase):
                                constant_(x, 0), nn.init.calculate_gain('relu'))
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # one HN to generate weights for both actor and critic
-        # we double up the output size to fill both networks in one go
         self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size])
-        self.output_dims_c = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=[hidden_size, hidden_size])
         num_outputs = action_space.shape[0]
         self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
         # Common param dict for the hypernetwork. We filter what we need for the particular hypernetwork types.
         hparams = {
-            'target_shapes': self.output_dims_a + self.output_dims_c + self.output_dims_dist,
+            'target_shapes': self.output_dims_a + self.output_dims_dist,
             'layers': [hidden_size * 10, hidden_size * 10],
             'te_dim': 8,
             'chunk_dim': 1000,
@@ -306,20 +295,11 @@ class HNBase(NNBase):
                          out_fn=torch.nn.Tanh(),
                          device=device)
 
-        self.critic = TargetNetwork(
-            n_in=num_inputs,
-            n_out=1,
-            hidden_layers=[hidden_size, hidden_size],
-            no_weights=True,
-            bn_track_stats=False,
-            activation_fn=torch.nn.Tanh(),
-            out_fn=None,
-            device=device)
         # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
-        #self.critic = nn.Sequential(
-        #    init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-        #    init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
-        #    init_(nn.Linear(hidden_size, 1)))
+        self.critic = nn.Sequential(
+            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, 1)))
 
         # dist was also moved here from policy so we can populate it with weights from the HN
         self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
@@ -341,6 +321,8 @@ class HNBase(NNBase):
 
     def reset_critic(self):
         print("Critic reset")
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), nn.init.calculate_gain('relu'))
         def _res(module):
             if type(module) == nn.Linear:
                 module = init_(module)
@@ -350,16 +332,14 @@ class HNBase(NNBase):
     def set_active_task(self, task_id: int):
         # reset critic if the task id changes (i.e. on training next task)
         if task_id != self.active_task and self.active_task is not None:
-            pass
-        #   self.reset_critic()
+           self.reset_critic()
         self.active_task = task_id
 
     def forward(self, inputs, rnn_hxs, masks):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
         generated_weights = self.hnet(self.active_task)
         self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
-        self.critic.set_weights(generated_weights[len(self.output_dims_a):len(self.output_dims_a) + len(self.output_dims_c)])
-        self.dist.set_weights(generated_weights[len(self.output_dims_a) + len(self.output_dims_c):])
+        self.dist.set_weights(generated_weights[len(self.output_dims_a):])
 
         hidden_critic = self.critic(inputs)
         hidden_actor, _ = self.actor(inputs)
