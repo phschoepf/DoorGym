@@ -9,7 +9,7 @@ from rlkit.torch.networks import FlattenMlp, TanhMlpPolicy
 from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic, TanhGaussianHnetPolicy
 from rlkit.exploration_strategies.base import PolicyWrappedWithExplorationStrategy
 from rlkit.exploration_strategies.gaussian_strategy import GaussianStrategy
-from rlkit.torch.sac.sac import SACTrainer
+from rlkit.torch.sac.sac import SACTrainer, HNSACTrainer
 from rlkit.torch.td3.td3 import TD3Trainer
 
 from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwork, TargetNetwork
@@ -79,7 +79,7 @@ def prepare_env(env_name, visionmodel_path=None, **env_kwargs):
 
 def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_load, variant):
     print(f"Preparing for {algorithm} trainer.")
-    if algorithm == "SAC":
+    if algorithm == "sac":
         if not pretrained_policy_load:
             M = variant['layer_size']
             qf1 = FlattenMlp(
@@ -134,7 +134,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             **variant['trainer_kwargs']
         )
 
-    elif algorithm == "HNSAC":
+    elif algorithm == "hnsac":
         if not pretrained_policy_load:
             M = variant['layer_size']
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -183,7 +183,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
         eval_policy = MakeDeterministic(policy)
         expl_policy = policy
 
-        trainer = SACTrainer(
+        trainer = HNSACTrainer(
             env=expl_env,
             policy=policy,
             qf1=qf1,
@@ -193,7 +193,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             **variant['trainer_kwargs']
         )
 
-    elif algorithm == "TD3":
+    elif algorithm == "td3":
         if not pretrained_policy_load:
             qf1 = FlattenMlp(
                 input_size=obs_dim + action_dim,

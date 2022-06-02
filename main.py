@@ -332,18 +332,13 @@ def onpolicy_main():
 def offpolicy_main(variant):
     print("offpolicy main")  
 
-    if args.algo == 'sac':
-        algo = "SAC"
-    elif args.algo == 'td3':
-        algo = "TD3"
-    
     setup_logger('{0}_{1}'.format(args.env_name, args.save_name), variant=variant)
     ptu.set_gpu_mode(True)  # optionally set the GPU (default=True)
 
     expl_env, eval_env, env_obj = prepare_env(args.env_name, args.visionmodel_path, **env_kwargs)
     obs_dim = expl_env.observation_space.low.size
     action_dim = expl_env.action_space.low.size    
-    expl_policy, eval_policy, trainer = prepare_trainer(algo, expl_env, obs_dim, action_dim, args.pretrained_policy_load, variant)
+    expl_policy, eval_policy, trainer = prepare_trainer(args.algo, expl_env, obs_dim, action_dim, args.pretrained_policy_load, variant)
 
     if args.env_name.find('doorenv')>-1:
         expl_policy.knob_noisy = eval_policy.knob_noisy = args.knob_noisy
@@ -479,6 +474,34 @@ if __name__ == "__main__":
         # args_variant = {**vars(args), **variant}
         # parse(args_variant)
         offpolicy_main(variant)
+
+    elif args.algo == 'hnsac':
+        variant = dict(
+            algorithm=args.algo,
+            version="normal",
+            layer_size=100,
+            algorithm_kwargs=dict(
+                num_epochs=6000,
+                num_eval_steps_per_epoch=512,  # 512
+                num_trains_per_train_loop=1000,  # 1000
+                num_expl_steps_per_train_loop=512,  # 512
+                min_num_steps_before_training=512,  # 1000
+                max_path_length=512,  # 512
+                batch_size=128,
+            ),
+            trainer_kwargs=dict(
+                discount=0.99,
+                soft_target_tau=5e-3,
+                target_update_period=1,
+                policy_lr=1E-3,
+                qf_lr=1E-3,
+                reward_scale=0.1,
+                use_automatic_entropy_tuning=True,
+            ),
+            replay_buffer_size=int(1E6),
+        )
+        offpolicy_main(variant)
+
     elif args.algo == 'td3':
         variant = dict(
             algorithm=args.algo,
