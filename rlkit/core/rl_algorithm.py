@@ -191,6 +191,21 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
                     print("Evaluation_rewards", v)
                     self.writer.add_scalar("Evaluation_rewards", v, epoch)
                     self.writer.add_scalar("Evaluation_rewards_envstep", v, total_num_steps)
+
+        # log target network weights
+        for name, param in enumerate(self.trainer.hnet.task_embs):
+            self.writer.add_histogram(f'emb.{name}', param.clone().detach().cpu().numpy(), epoch)
+        for name, param in enumerate(self.trainer.qf1.weights):
+            self.writer.add_histogram(f'qf1.{name}', param.clone().detach().cpu().numpy(), epoch)
+        for name, param in enumerate(self.trainer.qf2.weights):
+            self.writer.add_histogram(f'qf2.{name}', param.clone().detach().cpu().numpy(), epoch)
+        for name, param in enumerate(self.trainer.policy.fcs.weights):
+            self.writer.add_histogram(f'policy_fc.{name}', param.clone().detach().cpu().numpy(), epoch)
+        for name, param in enumerate(self.trainer.policy.last_fc.weights):
+            self.writer.add_histogram(f'policy_mean.{name}', param.clone().detach().cpu().numpy(), epoch)
+        for name, param in enumerate(self.trainer.policy.last_fc_logstd.weights):
+            self.writer.add_histogram(f'policy_logstd.{name}', param.clone().detach().cpu().numpy(), epoch)
+
         print("################################################################")
 
     @abc.abstractmethod
