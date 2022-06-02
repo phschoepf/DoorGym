@@ -321,6 +321,8 @@ class HNBase(NNBase):
 
     def reset_critic(self):
         print("Critic reset")
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), nn.init.calculate_gain('relu'))
         def _res(module):
             if type(module) == nn.Linear:
                 module = init_(module)
