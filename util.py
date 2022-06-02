@@ -82,6 +82,61 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
     if algorithm == "SAC":
         if not pretrained_policy_load:
             M = variant['layer_size']
+            qf1 = FlattenMlp(
+                input_size=obs_dim + action_dim,
+                output_size=1,
+                hidden_sizes=[M, M],
+            )
+            qf2 = FlattenMlp(
+                input_size=obs_dim + action_dim,
+                output_size=1,
+                hidden_sizes=[M, M],
+            )
+            target_qf1 = FlattenMlp(
+                input_size=obs_dim + action_dim,
+                output_size=1,
+                hidden_sizes=[M, M],
+            )
+            target_qf2 = FlattenMlp(
+                input_size=obs_dim + action_dim,
+                output_size=1,
+                hidden_sizes=[M, M],
+            )
+            policy = TanhGaussianPolicy(
+                obs_dim=obs_dim,
+                action_dim=action_dim,
+                hidden_sizes=[M, M],
+            )
+        else:
+            snapshot = torch.load(pretrained_policy_load)
+            qf1 = snapshot['trainer/qf1']
+            qf2 = snapshot['trainer/qf2']
+            target_qf1 = snapshot['trainer/target_qf1']
+            target_qf2 = snapshot['trainer/target_qf2']
+            policy = snapshot['exploration/policy']
+            if variant['trainer_kwargs']['use_automatic_entropy_tuning']:
+                log_alpha = snapshot['trainer/log_alpha']
+                variant['trainer_kwargs']['log_alpha'] = log_alpha
+                alpha_optimizer = snapshot['trainer/alpha_optimizer']
+                variant['trainer_kwargs']['alpha_optimizer'] = alpha_optimizer
+            print("loaded the pretrained policy {}".format(pretrained_policy_load))
+
+        eval_policy = MakeDeterministic(policy)
+        expl_policy = policy
+
+        trainer = SACTrainer(
+            env=expl_env,
+            policy=policy,
+            qf1=qf1,
+            qf2=qf2,
+            target_qf1=target_qf1,
+            target_qf2=target_qf2,
+            **variant['trainer_kwargs']
+        )
+
+    elif algorithm == "HNSAC":
+        if not pretrained_policy_load:
+            M = variant['layer_size']
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             weight_shape_q = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
             weight_shape_policy = TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=[M, M])
@@ -182,7 +237,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             expl_policy = exploration_policy
             eval_policy = policy
         else:
-            raise NotImplementedError(f"Unkown algorithm {algorithm}")
+            pass
 
         trainer = TD3Trainer(
             policy=policy,
@@ -193,5 +248,7 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             target_policy=target_policy,
             **variant['trainer_kwargs']
         )
+    else:
+        raise NotImplementedError(f"Unkown algorithm {algorithm}")
 
     return expl_policy, eval_policy, trainer
