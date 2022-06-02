@@ -210,9 +210,9 @@ class TanhGaussianHnetPolicy(nn.Module, ExplorationPolicy):
             assert LOG_SIG_MIN <= self.log_std <= LOG_SIG_MAX
 
     def set_weights(self, weights):
-        self.fcs.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[0]))
-        self.last_fc.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[1]))
-        self.last_fc_log_std.set_weights(nn.ParameterList(nn.Parameter(weight) for weight in weights[2]))
+        self.fcs.set_weights(weights[0])
+        self.last_fc.set_weights(weights[1])
+        self.last_fc_log_std.set_weights(weights[2])
 
     def get_action(self, obs_np, deterministic=False):
         actions = self.get_actions(obs_np[None], deterministic=deterministic)
