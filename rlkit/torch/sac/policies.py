@@ -185,7 +185,7 @@ class TanhGaussianHnetPolicy(nn.Module, ExplorationPolicy):
                                  no_weights=True,
                                  bn_track_stats=False,
                                  activation_fn=torch.nn.ReLU(),
-                                 out_fn=torch.nn.ReLu(),
+                                 out_fn=torch.nn.ReLU(),
                                  device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
         self.last_fc = TargetNetwork(n_in=last_hidden_size,
@@ -240,7 +240,7 @@ class TanhGaussianHnetPolicy(nn.Module, ExplorationPolicy):
         :param deterministic: If True, do not sample
         :param return_log_prob: If True, return a sample and its log probability
         """
-        h = self.fcs(obs)
+        h, _ = self.fcs(obs)
         mean = self.last_fc(h)
         if self.std is None:
             log_std = self.last_fc_log_std(h)

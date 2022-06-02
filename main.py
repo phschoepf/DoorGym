@@ -405,8 +405,7 @@ def offpolicy_main(variant):
     algorithm.step_skip = args.step_skip
     algorithm.max_path_length = variant['algorithm_kwargs']['max_path_length']
 
-    summary_name = args.log_dir + '{0}_{1}'
-    writer = SummaryWriter(summary_name.format(args.env_name, args.save_name))
+    writer = SummaryWriter(os.path.join(args.log_dir, args.algo, f'{args.env_name}_{args.save_name}'))
     algorithm.writer = writer
 
     algorithm.to(ptu.device)
@@ -500,9 +499,9 @@ if __name__ == "__main__":
                 reward_scale=0.1,
                 use_automatic_entropy_tuning=True,
                 beta=args.beta,
+                task_id=args.task_id,
             ),
             replay_buffer_size=int(1E6),
-            task_id=args.task_id
         )
         offpolicy_main(variant)
 

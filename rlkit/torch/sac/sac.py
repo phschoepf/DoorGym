@@ -349,10 +349,8 @@ class HNSACTrainer(TorchTrainer):
         self.emb_optimizer = optimizer_class([self.hnet.get_task_emb(self.task_id)], lr=policy_lr)
 
         # initialize target weights
-        self._update_tnet_weights()
+        self._update_tnet_weights(initialize=True)
         # use tau=1 soft update to copy qf weights to target_qf nets
-        ptu.soft_update_from_to_tnet(self.qf1, self.target_qf1, tau=1)
-        ptu.soft_update_from_to_tnet(self.qf2, self.target_qf2, tau=1)
 
     @property
     def tasks_trained(self):
@@ -371,8 +369,13 @@ class HNSACTrainer(TorchTrainer):
     def set_active_task(self, task_id: int):
         self.task_id = task_id
 
-    def _update_tnet_weights(self):
-        """Forward the hnet to get weights and feed the weights into all target networks"""
+    def _update_tnet_weights(self, initialize=False):
+        """
+        Forward the hnet to get weights and feed the weights into all target networks
+
+        Args:
+             initialize: If true, also sets the target_qf networks. Should only be used on initialization of the trainer.
+        """
         generated_weights = self.hnet(self.task_id)
         # slice the weight list into chunks for each target network that the hnet manages
         sliced_weights = {}
@@ -384,6 +387,9 @@ class HNSACTrainer(TorchTrainer):
         self.qf1.set_weights(sliced_weights['qf1'])
         self.qf2.set_weights(sliced_weights['qf2'])
         self.policy.set_weights([sliced_weights['fcs'], sliced_weights['last_fc'], sliced_weights['last_fc_logstd']])
+        if initialize:
+            self.target_qf1.set_weights(sliced_weights['qf1'])
+            self.target_qf2.set_weights(sliced_weights['qf2'])
 
     def train_from_torch(self, batch):
         rewards = batch['rewards']

@@ -139,8 +139,8 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             M = variant['layer_size']
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             hidden_layers = [M, M]
-            weight_shapes = dict(q1=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
-                                 q2=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
+            weight_shapes = dict(qf1=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
+                                 qf2=TargetNetwork.weight_shapes(n_in=obs_dim + action_dim, n_out=1, hidden_layers=hidden_layers),
                                  fcs=TargetNetwork.weight_shapes(n_in=obs_dim, n_out=hidden_layers[-1], hidden_layers=hidden_layers[:-1]),
                                  last_fc=TargetNetwork.weight_shapes(n_in=hidden_layers[-1], n_out=action_dim, hidden_layers=[]),
                                  last_fc_logstd=TargetNetwork.weight_shapes(n_in=hidden_layers[-1], n_out=action_dim, hidden_layers=[])
@@ -148,14 +148,15 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
 
             # the all-knowing hypernetwork
             # encompasses all Q-functions, and the 3 policy parts: common fc layers, mean head and logstd head
-            hnet = HyperNetwork(weight_shapes['q1'] +
-                                weight_shapes['q2'] +
-                                weight_shapes['policy_fcs'] +
-                                weight_shapes['policy_last_fc'] +
-                                weight_shapes['policy_last_fc_logstd'],
+            hnet = HyperNetwork(weight_shapes['qf1'] +
+                                weight_shapes['qf2'] +
+                                weight_shapes['fcs'] +
+                                weight_shapes['last_fc'] +
+                                weight_shapes['last_fc_logstd'],
                                 layers=[10 * M, 10 * M],
                                 te_dim=8,
-                                device=device)
+                                device=device
+                                ).to(device) # workaround for bug in clfd; theta tensors ignore device argument
 
             gen_tnet = lambda: TargetNetwork(n_in=obs_dim + action_dim,
                                              n_out=1,
@@ -207,7 +208,6 @@ def prepare_trainer(algorithm, expl_env, obs_dim, action_dim, pretrained_policy_
             target_qf2=target_qf2,
             **variant['trainer_kwargs']
         )
-        trainer.set_active_task(variant['task_id'])
 
     elif algorithm == "td3":
         if not pretrained_policy_load:
