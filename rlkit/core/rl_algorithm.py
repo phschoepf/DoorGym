@@ -203,7 +203,7 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
             self.writer.add_histogram(f'policy_fc.{name}', param.clone().detach().cpu().numpy(), epoch)
         for name, param in enumerate(self.trainer.policy.last_fc.weights):
             self.writer.add_histogram(f'policy_mean.{name}', param.clone().detach().cpu().numpy(), epoch)
-        for name, param in enumerate(self.trainer.policy.last_fc_logstd.weights):
+        for name, param in enumerate(self.trainer.policy.last_fc_log_std.weights):
             self.writer.add_histogram(f'policy_logstd.{name}', param.clone().detach().cpu().numpy(), epoch)
 
         print("################################################################")

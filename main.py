@@ -500,7 +500,7 @@ if __name__ == "__main__":
                 policy_lr=1E-3,
                 qf_lr=1E-3,
                 reward_scale=0.1,
-                use_automatic_entropy_tuning=True,
+                use_automatic_entropy_tuning=False,
                 beta=args.beta,
                 task_id=args.task_id,
             ),
