@@ -136,8 +136,8 @@ def main(dataset_file):
     door_material = material_name_list[randrange(0,3)]
 
     # Knob Door Joint Property
-    knob_door_damper = randrange(100, 200)/100.0 #191103 easy mode is (10, 20) 
-    knob_door_spring = randrange(100, 150)/100.0 #191103 easy mode is (10, 15)
+    knob_door_damper = randrange(10, 20)/100.0 #191103 easy mode is (10, 20)
+    knob_door_spring = randrange(10, 15)/100.0 #191103 easy mode is (10, 15)
     knob_door_frictionloss = randrange(0, 1)
     knob_rot_range = randrange(75, 80)*3.14/180
 
@@ -147,6 +147,9 @@ def main(dataset_file):
         knob_euler = [-1.57,1.57,0]
     elif hinge_loc == "lefthinge":
         doorknob_pos = [0, (0.5-knob_horizontal_location_ratio)*door_width*2, 0]
+        if knob_type == "pull":
+            # avoid base plate collision with frame bug
+            doorknob_pos = [0, (0.5 - (1.2 * knob_horizontal_location_ratio)) * door_width * 2, 0]
         knob_euler = [1.57,1.57,0]
     else:
         raise Exception("door direction undefinded")
