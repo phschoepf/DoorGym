@@ -261,6 +261,18 @@ def onpolicy_main():
             for name, param in agent.actor_critic.base.dist.weights.items():
                 writer.add_histogram(f'dist.{name}', param.clone().detach().cpu().numpy(), j)
 
+        writer.add_scalar("rollout_value/max", rollouts.value_preds.flatten().max(), j)
+        writer.add_scalar("rollout_value/min", rollouts.value_preds.flatten().min(), j)
+        writer.add_scalar("rollout_value/mean", rollouts.value_preds.flatten().mean(), j)
+        writer.add_scalar("rollout_value/variance", rollouts.value_preds.flatten().var(), j)
+        #writer.add_custom_scalars_multilinechart(['max_val', 'min_val', 'mean_val'])
+
+        writer.add_scalar("rollout_reward/max", rollouts.rewards.flatten().max(), j)
+        writer.add_scalar("rollout_reward/min", rollouts.rewards.flatten().min(), j)
+        writer.add_scalar("rollout_reward/mean", rollouts.rewards.flatten().mean(), j)
+        writer.add_scalar("rollout_reward/variance", rollouts.rewards.flatten().var(), j)
+        #writer.add_custom_scalars_multilinechart(['max_reward', 'min_reward', 'mean_reward'])
+
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
                 or j == num_updates - 1) and args.save_dir != "":
