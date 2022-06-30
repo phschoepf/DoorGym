@@ -81,8 +81,9 @@ def onpolicy_inference(
     if not actor_critic:
             actor_critic, ob_rms = torch.load(load_name)
     actor_critic = actor_critic.eval()
-    print(f"Evaluating for task {task_id}")
-    actor_critic.base.set_active_task(task_id)  # set CL task id for eval (todo maybe change this to a per-door basis)
+    if task_id is not None:
+        print(f"Evaluating for task {task_id}")
+        actor_critic.base.set_active_task(task_id)  # set CL task id for eval (todo maybe change this to a per-door basis)
     if env_kwargs['visionnet_input'] and env_name.find('doorenv')>-1:
         actor_critic.visionmodel = visionmodel
         actor_critic.visionnet_input = env_obj.visionnet_input

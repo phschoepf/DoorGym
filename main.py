@@ -111,7 +111,10 @@ def onpolicy_main():
             actor_critic.visionmodel = visionmodel.eval()
     actor_critic.nn = nn
     actor_critic.to(device)
-    actor_critic.base.set_active_task(args.task_id)
+
+    #only hypernetwork algos needs task_id
+    if args.task_id is not None:
+        actor_critic.base.set_active_task(args.task_id)
 
     #disable normalizer
     vec_norm = get_vec_normalize(envs)

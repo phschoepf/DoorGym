@@ -215,7 +215,7 @@ def get_args():
     parser.add_argument(
         '--task-id',
         type=int,
-        required=True,
+        default=None,
         help='task id for continual learning')
 
     args = parser.parse_args()
@@ -230,6 +230,13 @@ def get_args():
     if args.unity:
         assert args.visionnet_input, \
             'Visionnet_input should be True when Unity is True'
+
+    if args.algo.find('hn') > -1 and args.task_id is None:
+        parser.error('task_id is required for hypernetwork algorithms')
+    if args.algo.find('hn') <= -1 and args.task_id is not None:
+        parser.error('Unexpected argument "task_id" for non-hypernetwork algorithm')
+
+
 
     return args
 
