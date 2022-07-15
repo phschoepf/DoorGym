@@ -22,6 +22,8 @@ import doorenv2
 
 mujoco_timestep = 0.02
 def eval_print(dooropen_counter, counter, start_time, total_time):
+    if counter == 0: # workaround for 0-division bug
+        return 0, -1
     opening_rate = dooropen_counter/counter *100
     if dooropen_counter != 0:
         opening_timeavg = total_time/dooropen_counter
