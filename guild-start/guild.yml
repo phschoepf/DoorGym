@@ -1,0 +1,35 @@
+- config: common-flags
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    num-processes: 8
+    task-id: 0
+    lr: [ 1e-4, 1e-3, 5e-3, 1e-2 ]
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+    num-env-steps: 12000000
+
+- operations:
+    lr_opt_pull:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-pull
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_lever:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_round:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-round
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+      flags-dest: args
