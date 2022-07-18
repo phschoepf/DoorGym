@@ -7,6 +7,7 @@ from collections import deque
 import gym
 import numpy as np
 import pandas as pd
+import random
 
 import torch
 import torch.nn as nn
@@ -41,14 +42,32 @@ logger = logging.getLogger()
 ### DEBUG ###
 # torch.autograd.set_detect_anomaly(True)
 
+def set_seed(seed=1000, cuda_deterministic=False):
+    """
+    Sets the seed for reproducability
+
+    Args:
+        seed (int, optional): Input seed. Defaults to 1000.
+    """
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    cuda_available = args.cuda and torch.cuda.is_available()
+
+    if cuda_available:
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
+        if cuda_deterministic:
+            torch.backends.cudnn.benchmark = False
+            torch.backends.cudnn.deterministic = True
+
+
 def onpolicy_main():
     print("onpolicy main")
 
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
-    if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
+    set_seed(args.seed, cuda_deterministic=args.cuda_deterministic)
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 

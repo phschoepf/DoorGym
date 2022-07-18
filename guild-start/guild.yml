@@ -8,6 +8,8 @@
     clip-param: 0.3
     max-grad-norm: 1e-4
     num-env-steps: 12000000
+    seed: 1000
+    cuda-deterministic: True
 
 - operations:
     lr_opt_pull:
