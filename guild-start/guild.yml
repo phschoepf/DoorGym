@@ -8,8 +8,6 @@
     clip-param: 0.3
     max-grad-norm: 1e-4
     num-env-steps: 12000000
-    seed: 1000
-    cuda-deterministic: True
 
 - operations:
     lr_opt_pull:
@@ -34,4 +32,37 @@
         $include: common-flags
         save-name: hnppo-hparam-opt-task0-round
         world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_pull_left_fixed:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-pull_left_fixed
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinggripper_left_fixed/
+      flags-dest: args
+
+    determinism_test:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        lr: [ 1e-3, 1e-3, 1e-3 ]
+        num-env-steps: 1000000
+        save-name: hnppo-determinism-test
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        seed: 1000
+        cuda-deterministic: True
+      flags-dest: args
+
+    determinism_test_singlethread:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        lr: [ 1e-3, 1e-3, 1e-3 ]
+        num-env-steps: 1000000
+        num-processes: 1
+        save-name: hnppo-determinism-test
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        seed: 1000
+        cuda-deterministic: True
       flags-dest: args
