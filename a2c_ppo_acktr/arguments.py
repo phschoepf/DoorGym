@@ -1,10 +1,10 @@
 import argparse
-import os
-
 import torch
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
+    add_common_args(parser)
     parser.add_argument(
         '--algo', default='ppo', help='algorithm to use: a2c | ppo | sac | td3')
     parser.add_argument(
@@ -54,8 +54,6 @@ def get_args():
         type=float,
         default=0.5,
         help='max norm of gradients (default: 0.5)')
-    parser.add_argument(
-        '--seed', type=int, default=1, help='random seed (default: 1)')
     parser.add_argument(
         '--cuda-deterministic',
         action='store_true',
@@ -107,10 +105,6 @@ def get_args():
         default=10e8,
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
-        '--env-name',
-        default='doorenv-v0',
-        help='environment to train on (default: doorenv-v0)')
-    parser.add_argument(
         '--log-dir',
         default='./logs/',
         help='directory to save agent logs (default: ./logs/)')
@@ -145,13 +139,8 @@ def get_args():
     parser.add_argument(
         '--save-name',
         type=str,
-        default="test",
-        help='name for changing the log and model name') 
-    parser.add_argument(
-        '--knob-noisy',
-        action='store_true',
-        default=False,
-        help='add noise to knob position to resemble the noise from the visionnet')
+        required=True,
+        help='name for changing the log and model name')
     parser.add_argument(
         '--obs-noisy',
         action='store_true',
@@ -173,50 +162,10 @@ def get_args():
         default=None,
         help='load the replay buffer')
     parser.add_argument(
-        '--visionmodel-path',
-        type=str,
-        default="./trained_visionmodel/",
-        help='load the vision network model')
-    parser.add_argument(
-        '--world-path',
-        type=str,
-        default="/home/demo/doorgym/world_generator/world/pull_floatinghook",
-        help='load the vision network model')
-    parser.add_argument(
         '--val-path',
         type=str,
         default=None,
         help='load the vision network model')
-    parser.add_argument(
-        '--visionnet-input',
-        action="store_true",
-        default=False,
-        help='Use vision net for knob position estimation')
-    parser.add_argument(
-        '--unity',
-        action="store_true",
-        default=False,
-        help='Use unity for an input of a vision net')
-    parser.add_argument(
-        '--port',
-        type=int,
-        default=1050,
-        help='port number to connect to Unity. (Only for SAC)')
-    parser.add_argument(
-        '--step-skip',
-        type=int,
-        default=4,
-        help='number of step skip in pos control')
-    parser.add_argument(
-        '--pos-control',
-        action="store_true",
-        default=False,
-        help='Turn on pos control')
-    parser.add_argument(
-        '--task-id',
-        type=int,
-        default=None,
-        help='task id for continual learning')
     parser.add_argument(
         '--network-size',
         nargs='+',
@@ -244,28 +193,15 @@ def get_args():
     if args.algo.find('hn') <= -1 and args.task_id is not None:
         parser.error('Unexpected argument "task_id" for non-hypernetwork algorithm')
 
-
-
     return args
 
 
 def get_args_enjoy():
     """
     Argparser for evaluation/inference script enjoy.py
-    TODO: unify with args for training
     """
     parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument(
-        '--seed', type=int, default=1, help='random seed (default: 1)')
-    parser.add_argument(
-        '--log-interval',
-        type=int,
-        default=10,
-        help='log interval, one log per n updates (default: 10)')
-    parser.add_argument(
-        '--env-name',
-        default='doorenv-v0',
-        help='environment to train on (default: PongNoFrameskip-v4)')
+    add_common_args(parser)
     parser.add_argument(
         '--non-det',
         action='store_true',
@@ -274,7 +210,7 @@ def get_args_enjoy():
     parser.add_argument(
         '--load-name',
         type=str,
-        default='',
+        required=True,
         help='which model to load')
     parser.add_argument(
         '--eval',
@@ -286,6 +222,19 @@ def get_args_enjoy():
         action='store_true',
         default=False,
         help="force rendering")
+    args = parser.parse_args()
+
+    return args
+
+
+def add_common_args(parser: argparse.ArgumentParser) -> None:
+    """Arguments used for both training and eval go here. """
+    parser.add_argument(
+        '--seed', type=int, default=1, help='random seed (default: 1)')
+    parser.add_argument(
+        '--env-name',
+        default='doorenv-v0',
+        help='environment to train on (default: doorenv-v0)')
     parser.add_argument(
         '--knob-noisy',
         action='store_true',
@@ -310,17 +259,17 @@ def get_args_enjoy():
         '--visionmodel-path',
         type=str,
         default="./trained_visionmodel/",
-        help='load the replay buffer')
+        help='load the vision network model')
     parser.add_argument(
         '--world-path',
         type=str,
-        default=os.path.join(os.getcwd(), "world_generator/world/pull_blue_floatinghook"),
-        help='load the vision network model')
+        required=True,
+        help='Folder containing the world files')
     parser.add_argument(
         '--pos-control',
         action="store_true",
         default=False,
-        help='use pos control')
+        help='Turn on pos control')
     parser.add_argument(
         '--step-skip',
         type=int,
@@ -329,9 +278,5 @@ def get_args_enjoy():
     parser.add_argument(
         '--task-id',
         type=int,
-        required=False,
-        help='id of CL task to evaluate'  # TODO remove this for class CL later
-    )
-    args = parser.parse_args()
-
-    return args
+        default=None,
+        help='task id for continual learning')
