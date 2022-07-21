@@ -123,7 +123,8 @@ def onpolicy_main():
             base=(HNBase if args.algo.find("hnppo") > -1 else None),
             base_kwargs={'recurrent': args.recurrent_policy,
                          'action_space': envs.action_space,
-                         'hnet': HyperNetwork if args.algo == "hnppo" else ChunkedHyperNetwork if args.algo == "chnppo" else None})
+                         'hnet': HyperNetwork if args.algo == "hnppo" else ChunkedHyperNetwork if args.algo == "chnppo" else None,
+                         'hidden_size': args.network_size})
     
     if visionnet_input: 
             visionmodel = load_visionmodel(args.save_name, args.visionmodel_path, VisionModelXYZ())  

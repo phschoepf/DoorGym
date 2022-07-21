@@ -11,9 +11,22 @@ from clfd.imitation_cl.model.hypernetwork import HyperNetwork, ChunkedHyperNetwo
 
 from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian, FunctionalDiagGaussian
 from a2c_ppo_acktr.utils import init
+from typing import List
 
 logits_input = False
 knob_pos_smoothening = False
+
+init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), nn.init.calculate_gain('relu'))
+
+def gen_layers(num_inputs: int, hidden_size: List[int], activation_fn=nn.Tanh):
+    """Generate a list of modules for given input size, hidden sizes and activation function. Output layer is omitted."""
+    layer_size = [num_inputs] + hidden_size
+    modules_list = []
+    for i in range(len(layer_size) - 1):
+        modules_list.append(init_(nn.Linear(layer_size[i], layer_size[i+1]))),
+        modules_list.append(activation_fn())
+    return modules_list
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -115,14 +128,14 @@ class Policy(nn.Module):
         return inputs
 
 class NNBase(nn.Module):
-    def __init__(self, recurrent, recurrent_input_size, hidden_size):
+    def __init__(self, recurrent, recurrent_input_size, hidden_size: List[int]):
         super(NNBase, self).__init__()
 
         self._hidden_size = hidden_size
         self._recurrent = recurrent
 
         if recurrent:
-            self.gru = nn.GRU(recurrent_input_size, hidden_size)
+            self.gru = nn.GRU(recurrent_input_size, hidden_size[0])
             for name, param in self.gru.named_parameters():
                 if 'bias' in name:
                     nn.init.constant_(param, 0)
@@ -136,12 +149,12 @@ class NNBase(nn.Module):
     @property
     def recurrent_hidden_state_size(self):
         if self._recurrent:
-            return self._hidden_size
+            return self._hidden_size[0]
         return 1
 
     @property
     def output_size(self):
-        return self._hidden_size
+        return self._hidden_size[-1]
 
     def _forward_gru(self, x, hxs, masks):
         if x.size(0) == hxs.size(0):
@@ -202,25 +215,15 @@ class NNBase(nn.Module):
 
 
 class MLPBase(NNBase):
-    def __init__(self, num_inputs, recurrent=False, hidden_size=64, **kwargs):
+    def __init__(self, num_inputs, recurrent=False, hidden_size=[64, 64], **kwargs):
         super(MLPBase, self).__init__(recurrent, num_inputs, hidden_size)
 
         if recurrent:
-            num_inputs = hidden_size
+            num_inputs = hidden_size[0]
 
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0), nn.init.calculate_gain('relu'))
-
-        self.actor = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)),nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
-
-        self.critic = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
-
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
-
+        self.actor = nn.Sequential(*gen_layers(num_inputs, hidden_size))
+        self.critic = nn.Sequential(*gen_layers(num_inputs, hidden_size))
+        self.critic_linear = init_(nn.Linear(hidden_size[-1], 1))
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks):
@@ -233,7 +236,7 @@ class MLPBase(NNBase):
 
 
 class HNBase(NNBase):
-    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=64):
+    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=[64, 64]):
         """
         Args:
             num_inputs: Number of input (env observations)
@@ -245,21 +248,17 @@ class HNBase(NNBase):
         super(HNBase, self).__init__(recurrent, num_inputs, hidden_size)
 
         if recurrent:
-            num_inputs = hidden_size
-
-        # TODO : no init for HN. is this ok?
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0), nn.init.calculate_gain('relu'))
+            num_inputs = hidden_size[0]
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size, hidden_layers=[hidden_size])
+        self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size[-1], hidden_layers=hidden_size[:-1])
         num_outputs = action_space.shape[0]
         self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
         # Common param dict for the hypernetwork. We filter what we need for the particular hypernetwork types.
         hparams = {
             'target_shapes': self.output_dims_a + self.output_dims_dist,
-            'layers': [hidden_size * 10, hidden_size * 10],
+            'layers': [hidden_size[0] * 10] * 2,  # hnet is currently fixed at 2 layers deep
             'te_dim': 8,
             'chunk_dim': 1000,
             'ce_dim': 5,
@@ -287,8 +286,8 @@ class HNBase(NNBase):
 
         self.actor = TargetNetwork(
                          n_in=num_inputs,
-                         n_out=hidden_size,
-                         hidden_layers=[hidden_size],
+                         n_out=hidden_size[-1],
+                         hidden_layers=hidden_size[:-1],
                          no_weights=True,
                          bn_track_stats=False,
                          activation_fn=torch.nn.Tanh(),
@@ -296,11 +295,7 @@ class HNBase(NNBase):
                          device=device)
 
         # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
-        self.critic = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, 1)))
-
+        self.critic = nn.Sequential(*gen_layers(num_inputs, hidden_size), init_(nn.Linear(hidden_size[-1], 1)))
         # dist was also moved here from policy so we can populate it with weights from the HN
         self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
 
@@ -321,8 +316,6 @@ class HNBase(NNBase):
 
     def reset_critic(self):
         print("Critic reset")
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0), nn.init.calculate_gain('relu'))
         def _res(module):
             if type(module) == nn.Linear:
                 module = init_(module)
