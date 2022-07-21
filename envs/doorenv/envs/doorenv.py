@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     static_nn = 0
     def __init__(self,
-                port=1050,
-                unity=False,visionnet_input=False,
-                world_path='/home/demo/DoorGym/world_generator/world/pull_floatinghook',
-                pos_control=False):
+                 world_path,  # path to a specific world, not the world folder!
+                 port=1050,
+                 unity=False,
+                 visionnet_input=False,
+                 pos_control=False):
         self.tt = 0
         self.port = port
         self.hooked = True
@@ -31,7 +32,7 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         self.imgsize_w = 640
         self.visionnet_input = visionnet_input
         self.gripper_action = np.zeros(4)
-        self.xml_path = self.random_world(world_path)
+        self.xml_path = world_path
 
         if self.xml_path.find("baxter")>-1:
             if self.xml_path.find("botharm")>-1:
@@ -414,10 +415,11 @@ class DoorEnv(mujoco_env.MujocoEnv, utils.EzPickle):
                 print("now connecting")
                 time.sleep(1)
 
-    def random_world(self, world_path):
-        self.world = random.choice(os.listdir(world_path))
-        print("world:", self.world)
-        xml_path = os.path.join(world_path, self.world)
+    @classmethod
+    def random_world(cls, world_path):
+        world = random.choice(os.listdir(world_path))
+        print("world:", world)
+        xml_path = os.path.join(world_path, world)
         return xml_path
 
     def normalizer(self, img):

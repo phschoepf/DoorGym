@@ -20,6 +20,8 @@ import multiprocessing as mp
 import ctypes
 from baselines import logger
 
+from doorenv.envs.doorenv import DoorEnv
+
 _NP_TO_CT = {np.float64: ctypes.c_double,
              np.float32: ctypes.c_float,
              np.int32: ctypes.c_int32,
@@ -164,10 +166,14 @@ def make_vec_envs(env_name,
                   allow_early_resets,
                   num_frame_stack=None,
                   env_kwargs=None,):
-    envs = [
-        make_env(env_name, seed, i, log_dir, allow_early_resets, env_kwargs)
-        for i in range(num_processes)
-    ]
+    # pick worlds before forking workers to avoid parallel RNG trouble
+    random_worlds = [DoorEnv.random_world(env_kwargs['world_path']) for _ in range(num_processes)]
+
+    envs = []
+    for i in range(num_processes):
+        # set the world_path to the appropriate world before each make_env call
+        env_kwargs['world_path'] = random_worlds[i]
+        envs.append(make_env(env_name, seed, i, log_dir, allow_early_resets, env_kwargs))
 
     if len(envs) > 1:
         envs = ShmemVecEnv_DR(envs, context='fork')
