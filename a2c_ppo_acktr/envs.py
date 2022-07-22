@@ -171,9 +171,10 @@ def make_vec_envs(env_name,
 
     envs = []
     for i in range(num_processes):
+        env_kwargs_copy = env_kwargs.copy()
         # set the world_path to the appropriate world before each make_env call
-        env_kwargs['world_path'] = random_worlds[i]
-        envs.append(make_env(env_name, seed, i, log_dir, allow_early_resets, env_kwargs))
+        env_kwargs_copy['world_path'] = random_worlds[i]
+        envs.append(make_env(env_name, seed, i, log_dir, allow_early_resets, env_kwargs_copy))
 
     if len(envs) > 1:
         envs = ShmemVecEnv_DR(envs, context='fork')
