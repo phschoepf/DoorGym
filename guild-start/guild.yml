@@ -99,7 +99,7 @@
         cuda-deterministic: True
       flags-dest: args
 
-    lr_size_clip_opt_ppo:
+    lr_size_clip_opt_ppo_pull:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         env-name: doorenv-v0
@@ -111,6 +111,45 @@
         num-env-steps: 4000000
         save-name: ppo-lr_size_clip_opt-pull
         world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinggripper/
+      flags-dest: args
+      optimizers:
+        bayesian:
+          default: yes
+          algorithm: bayesian
+      objective: -Episode_rewards
+
+    lr_size_clip_opt_ppo_lever:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        lr: uniform[1e-4:2e-2]
+        clip-param: uniform[0.2:0.6]
+        network-size: ['128 128', '64 64', '64 64 64']
+        num-env-steps: 4000000
+        save-name: ppo-lr_size_clip_opt-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+      flags-dest: args
+      optimizers:
+        bayesian:
+          default: yes
+          algorithm: bayesian
+      objective: -Episode_rewards
+
+    lr_size_clip_opt_ppo_round:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        lr: uniform[1e-4:2e-2]
+        clip-param: uniform[0.2:0.6]
+        network-size: ['128 128', '64 64', '64 64 64']
+        num-env-steps: 4000000
+        save-name: ppo-lr_size_clip_opt-round
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+        save-interval: 30
       flags-dest: args
       optimizers:
         bayesian:
