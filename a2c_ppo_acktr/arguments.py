@@ -166,14 +166,6 @@ def get_args():
         type=str,
         default=None,
         help='load the vision network model')
-    parser.add_argument(
-        '--network-size',
-        nargs='+',
-        type=int,
-        default=[64, 64],
-        help='List of widths of each hidden layer in the policy network. Currently only implemented for PPO and HNPPO.'
-        # TODO make available to other algos
-    )
 
     args = parser.parse_args()
 
@@ -280,3 +272,11 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=None,
         help='task id for continual learning')
+    parser.add_argument(
+        '--network-size',
+        nargs='+',
+        type=int,
+        default=[64, 64],
+        help='List of widths of each hidden layer in the policy network. Currently only implemented for PPO and HNPPO.'
+        # TODO make available to other algos
+    )
