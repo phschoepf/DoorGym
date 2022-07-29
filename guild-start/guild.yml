@@ -156,3 +156,33 @@
           default: yes
           algorithm: bayesian
       objective: -Episode_rewards
+
+    # A long ppo-lever run with the found optimal hparams.
+    ppo_lever_long:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        lr: 0.003
+        clip-param: 0.33
+        num-env-steps: 12000000
+        save-name: ppo-lever_long
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        save-interval: 30
+      flags-dest: args
+
+    ppo_round_long:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        lr: 1.0e-4
+        clip-param: 0.597
+        network-size: '64 64 64'
+        num-env-steps: 12000000
+        save-name: ppo-round_long
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+        save-interval: 30
+      flags-dest: args
