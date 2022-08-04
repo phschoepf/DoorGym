@@ -1,0 +1,50 @@
+- config: common-flags-determinism
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    task-id: 0
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+
+- operations:
+    ########### Running same experiment 3 times to confirm determinism with fixed seed. ###########
+    determinism_test:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags-determinism
+        lr: [ 1e-3, 1e-3, 1e-3 ]
+        num-env-steps: 1000000
+        num-processes: 8
+        save-name: hnppo-determinism-test
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        seed: 1000
+        cuda-deterministic: True
+      flags-dest: args
+
+    determinism_test_ppo:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        lr: [ 1e-3, 1e-3, 1e-3 ]
+        clip-param: 0.3
+        num-env-steps: 1000000
+        save-name: ppo-determinism-test
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        seed: 1000
+        cuda-deterministic: True
+      flags-dest: args
+
+    determinism_test_singlethread:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags-determinism
+        lr: [ 1e-3, 1e-3, 1e-3 ]
+        num-env-steps: 1000000
+        num-processes: 1
+        save-name: hnppo-determinism-test
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+        seed: 1000
+        cuda-deterministic: True
+      flags-dest: args

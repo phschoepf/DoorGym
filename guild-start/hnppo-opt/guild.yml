@@ -1,0 +1,96 @@
+- config: common-flags
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    num-processes: 8
+    task-id: 0
+    lr: [ 1e-4, 1e-3, 5e-3, 1e-2 ]
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+    num-env-steps: 12000000
+
+- operations:
+    ########### Simple lr comparisons for hnppo with the floatinggripper. ###########
+    lr_opt_pull:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-pull
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_lever:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_round:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-round
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+      flags-dest: args
+
+    lr_opt_pull_left_fixed:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-pull_left_fixed
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinggripper_left_fixed/
+      flags-dest: args
+
+    lr_opt_lever_left:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: common-flags
+        save-name: hnppo-hparam-opt-task0-lever_left
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper_left/
+      flags-dest: args
+
+
+    ########### Bayesian optimization of [lr, network-size, clip-param] for HNPPO ###########
+    lr_size_clip_opt_hnppo_lever:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: hnppo
+        num-processes: 8
+        lr: uniform[1e-4:2e-2]
+        clip-param: uniform[0.2:0.6]
+        max-grad-norm: 1e-4
+        task-id: 0
+        network-size: [ '128 128', '64 64', '64 64 64' ]
+        num-env-steps: 4000000
+        save-name: hnppo-lr_size_clip_opt-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
+      flags-dest: args
+      optimizers:
+        bayesian:
+          default: yes
+          algorithm: bayesian
+      objective: -Episode_rewards
+
+    lr_size_clip_opt_hnppo_round:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: hnppo
+        num-processes: 8
+        lr: uniform[1e-4:2e-2]
+        clip-param: uniform[0.2:0.6]
+        max-grad-norm: 1e-4
+        task-id: 0
+        network-size: [ '128 128', '64 64', '64 64 64' ]
+        num-env-steps: 4000000
+        save-name: hnppo-lr_size_clip_opt-round
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
+      flags-dest: args
+      optimizers:
+        bayesian:
+          default: yes
+          algorithm: bayesian
+      objective: -Episode_rewards
