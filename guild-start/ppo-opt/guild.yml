@@ -88,25 +88,3 @@
         world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/round_blue_floatinggripper/
         save-interval: 30
       flags-dest: args
-
-
-   ########### Bayesian optimization of [lr, network-size, clip-param, entropy-coef] for vanilla PPO ###########
-    lr_size_clip_opt_ppo_lever_2:
-      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
-      flags:
-        env-name: doorenv-v0
-        algo: ppo
-        num-processes: 8
-        lr: loguniform[1e-4:2e-2]
-        clip-param: uniform[0.2:0.6]
-        network-size: [ '128 128', '64 64', '64 64 64' ]
-        num-env-steps: 4000000
-        entropy-coef: loguniform[1e-5:5e-2]
-        save-name: ppo-lr_size_clip_opt-lever_2
-        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinggripper/
-      flags-dest: args
-      optimizers:
-        bayesian:
-          default: yes
-          algorithm: bayesian
-      objective: -Episode_rewards

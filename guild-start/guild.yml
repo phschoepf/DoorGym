@@ -16,3 +16,19 @@
         save-name: hnppo-hooktest-task0-lever
         world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
       flags-dest: args
+
+    # Lever PPO with latest hparams from the doorgym paper
+    hooktest_lever_ppo_latest:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: ppo
+        num-processes: 8
+        clip-param: 0.2
+        max-grad-norm: 0.5
+        lr: 1e-3
+        entropy-coef: 0.0
+        num-env-steps: 12000000
+        save-name: ppo-hooktest-lever-latests
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
+      flags-dest: args

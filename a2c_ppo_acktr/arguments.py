@@ -185,6 +185,10 @@ def get_args():
     if args.algo.find('hn') <= -1 and args.task_id is not None:
         parser.error('Unexpected argument "task_id" for non-hypernetwork algorithm')
 
+    # if network_size is not given, determine it from width and depth
+    if not args.network_size:
+        args.network_size = [args.network_width] * args.network_depth
+
     return args
 
 
@@ -276,7 +280,21 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         '--network-size',
         nargs='+',
         type=int,
-        default=[64, 64],
-        help='List of widths of each hidden layer in the policy network. Currently only implemented for PPO and HNPPO.'
+        default=None,
+        help='List of widths of each hidden layer in the policy network. If given, overrides --network-width and '
+             '--network-depth. Currently customizable network size is only implemented for PPO and HNPPO. '
         # TODO make available to other algos
+    )
+
+    parser.add_argument(
+        '--network-width',
+        type=int,
+        default=64,
+        help='Width of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 64)'
+    )
+    parser.add_argument(
+        '--network-depth',
+        type=int,
+        default=2,
+        help='Number of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 2)'
     )

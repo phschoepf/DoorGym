@@ -94,3 +94,31 @@
           default: yes
           algorithm: bayesian
       objective: -Episode_rewards
+
+
+    ########### Bayesian optimization of [lr, network-size, clip-param, entropy-coef] for vanilla HNPPO. ###########
+    ########### Also using the floatinghook again to try and get lever doors to open ###########
+    lr_size_clip_entropy_opt_hnppo_lever:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: hnppo
+        num-processes: 8
+        lr: loguniform[1e-4:2e-2]
+        clip-param: uniform[0.2:0.6]
+        max-grad-norm: 1e-4
+        task-id: 0
+        network-width: uniform[64:1024]
+          type: int
+        network-depth: uniform[2:4]
+          type: int
+        num-env-steps: 4000000
+        entropy-coef: loguniform[1e-5:5e-2]
+        save-name: hnppo-lr_size_clip_entropy_opt-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
+      flags-dest: args
+      optimizers:
+        bayesian:
+          default: yes
+          algorithm: bayesian
+      objective: -Episode_rewards
