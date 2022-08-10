@@ -236,7 +236,7 @@ class MLPBase(NNBase):
 
 
 class HNBase(NNBase):
-    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=[64, 64]):
+    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=[64, 64], te_dim=8):
         """
         Args:
             num_inputs: Number of input (env observations)
@@ -259,7 +259,7 @@ class HNBase(NNBase):
         hparams = {
             'target_shapes': self.output_dims_a + self.output_dims_dist,
             'layers': [hidden_size[0] * 10] * 2,  # hnet is currently fixed at 2 layers deep
-            'te_dim': 8,
+            'te_dim': te_dim,
             'chunk_dim': 1000,
             'ce_dim': 5,
             'device': device

@@ -298,3 +298,9 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         default=2,
         help='Number of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 2)'
     )
+    parser.add_argument(
+        '--te-dim',
+        type=int,
+        default=8,
+        help='Hypernetwork task embedding dimension'
+    )
