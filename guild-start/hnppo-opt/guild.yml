@@ -123,3 +123,25 @@
           algorithm: bayesian
           random-starts: 4
       objective: -Episode_rewards
+
+
+    # A long ppo-lever run with the found optimal hparams.
+    hnppo_lever_long:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        env-name: doorenv-v0
+        algo: hnppo
+        num-processes: 8
+        lr: 2e-2
+        clip-param: 0.35
+        max-grad-norm: 1e-4
+        task-id: 0
+        network-width: 80
+        network-depth: 3
+        num-env-steps: 12000000
+        entropy-coef: 1e-4
+        beta: 5e-3  # does not matter for task 0
+        te-dim: 16
+        save-name: hnppo-lever_long
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
+      flags-dest: args

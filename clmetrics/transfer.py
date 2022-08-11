@@ -53,7 +53,7 @@ def make_accuracy_matrix():
 
             print(
                 f'evaluating task {eval_tid} on checkpoint of task {train_tid} (world {world_to_load.split("/")[-1]})')
-            opening_rate, opening_timeavg = enjoy.onpolicy_inference(
+            opening_rate, opening_timeavg, episode_rewards_avg = enjoy.onpolicy_inference(
                 seed=args.seed,
                 env_name=args.env_name,
                 det=True,
