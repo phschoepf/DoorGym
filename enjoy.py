@@ -140,6 +140,7 @@ def onpolicy_inference(
     dooropen_counter = 0
     door_opened = False
     test_num = 100
+    episode_rewards = []
 
     while True:
         with torch.no_grad():
@@ -221,6 +222,7 @@ def onpolicy_inference(
                 epi_counter += 1
                 epi_step = 0
                 door_opened = False
+                episode_rewards.append(reward)
 
 
         if i>=512/step_skip*test_num:
@@ -230,7 +232,7 @@ def onpolicy_inference(
             break
 
     opening_rate, opening_timeavg = eval_print(dooropen_counter, epi_counter-1, start_time, total_time)
-    return opening_rate, opening_timeavg
+    return opening_rate, opening_timeavg, np.mean(episode_rewards)
 
 def offpolicy_inference(
                 seed, 

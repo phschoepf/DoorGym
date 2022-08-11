@@ -324,7 +324,7 @@ def onpolicy_main():
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
 
-            opening_rate, opening_timeavg = onpolicy_inference(
+            opening_rate, opening_timeavg, eval_episode_rewards_avg = onpolicy_inference(
                                                 seed=args.seed, 
                                                 env_name=args.env_name, 
                                                 det=True, 
@@ -343,6 +343,7 @@ def onpolicy_main():
             print("{}th update. {}th timestep. opening rate {}%. Average time to open is {}.".format(j, total_num_steps, opening_rate, opening_timeavg))
             writer.add_scalar("Opening rate per envstep", opening_rate, total_num_steps)
             writer.add_scalar("Opening rate per update", opening_rate, j)
+            writer.add_scalar("eval_episode_rewards", eval_episode_rewards_avg, j)
 
         DR=True #Domain Randomization
         ################## for multiprocess world change ######################
