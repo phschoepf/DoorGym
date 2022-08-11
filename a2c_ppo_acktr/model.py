@@ -258,7 +258,8 @@ class HNBase(NNBase):
         # Common param dict for the hypernetwork. We filter what we need for the particular hypernetwork types.
         hparams = {
             'target_shapes': self.output_dims_a + self.output_dims_dist,
-            'layers': [hidden_size[0] * 10] * 2,  # hnet is currently fixed at 2 layers deep
+            # 'layers': [hidden_size[0] * 10] * 2,  # hnet is currently fixed at 2 layers deep
+            'layers': [1024] * 2,  # TODO temporarily fixed hnet size, should revert back to dynamic (but maybe lower scale factor than 10)
             'te_dim': te_dim,
             'chunk_dim': 1000,
             'ce_dim': 5,

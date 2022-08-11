@@ -108,12 +108,12 @@
         clip-param: uniform[0.2:0.6]
         max-grad-norm: 1e-4
         task-id: 0
-        network-width: uniform[64:1024]
-          type: int
+        network-width: uniform[64:256]
         network-depth: uniform[2:4]
-          type: int
-        num-env-steps: 4000000
+        num-env-steps: 2000000
         entropy-coef: loguniform[1e-5:5e-2]
+        beta: 5e-3  # does not matter for task 0
+        te-dim: uniform[4:16]
         save-name: hnppo-lr_size_clip_entropy_opt-lever
         world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
       flags-dest: args
@@ -121,4 +121,5 @@
         bayesian:
           default: yes
           algorithm: bayesian
+          random-starts: 4
       objective: -Episode_rewards
