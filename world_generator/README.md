@@ -33,3 +33,22 @@
 This mjcf generator is powered by the following repo.
 
 [https://github.com/iandanforth/mjcf](https://github.com/iandanforth/mjcf)
+
+# List of worlds
+
+| name                                 | knob type | robot type      | options | used in                                              | modification                                         |
+|--------------------------------------|-----------|-----------------|---------|------------------------------------------------------|------------------------------------------------------|
+| lever_blue_floatinggripper           | lever     | floatinggripper |         | ppo-hn<x>, x=9..11, guild optimizations, determinism ||
+| lever_blue_floatinggripper_left      | lever     | floatinggripper | left    | ppo-hn<x>, x=9..11, guild optimizations              ||
+| lever_blue_floatinghook              | lever     | floatinghook    |         | ppo-hn<x>, x=1..4, guild hnppo series                ||
+| lever_blue_floatinghook_left         | lever     | floatinghook    | left    | guild hnppo series                                   ||
+| lever_blue_gripper                   | lever     | gripper         |         | ppo-hn<x>, x=5..8                                    ||
+| pull_blue_floatinggripper            | pull      | floatinggripper |         | ppo-hn<x>, x=9..11, guild optimizations              ||
+| pull_blue_floatinggripper_left       | pull      | floatinggripper | left    | ppo-hn<x>, x=9..10, guild optimizations              ||
+| pull_blue_floatinggripper_left_fixed | pull      | floatinggripper | left    | ppo-hn11, guild optimizations                        | moved handle further inward to avoid frame collision |
+| pull_blue_floatinghook               | pull      | floatinghook    |         | ppo-hn<x>, x=1..4                                    ||
+| pull_blue_gripper                    | pull      | gripper         |         | ppo-hn<x>, x=5..8                                    ||
+| round_blue_floatinggripper           | round     | floatinggripper |         | ppo-hn<x>, x=9..10, guild optimizations              ||
+| round_blue_floatinggripper_easy      | round     | floatinggripper |         | ppo-hn11                                             | decrease spring and damping force on handle          |
+| round_blue_floatinghook              | round     | floatinghook    |         | ppo-hn<x>, x=1..4, guild hnppo series                ||
+| round_blue_gripper                   | round     | gripper         |         | ppo-hn<x>, x=5..8                                    ||
