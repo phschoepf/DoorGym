@@ -78,21 +78,24 @@ class CLMetric:
         fwt_matrix = np.triu(self.accuracy_matrix, k=1)
         return np.sum(fwt_matrix) * 2 / (self.n * (self.n-1))
 
-    def backward_transfer(self):
-        """from https://arxiv.org/abs/1810.13166. This is the BWT+ metric."""
+    def _backward_transfer(self):
+        """from https://arxiv.org/abs/1810.13166. This is the BWT metric."""
         bwt_matrix = np.tril(self.accuracy_matrix - np.diag(self.accuracy_matrix), k=-1)
-        return max(0, np.sum(bwt_matrix) * 2 / (self.n * (self.n-1)))
+        return np.sum(bwt_matrix) * 2 / (self.n * (self.n-1))
+
+    def backward_transfer_pos(self):
+        """from https://arxiv.org/abs/1810.13166. This is the BWT+ metric."""
+        return max(0, self._backward_transfer())
 
     def remembering(self):
         """from https://arxiv.org/abs/1810.13166. This is the REM metric."""
-        bwt_matrix = np.tril(self.accuracy_matrix - np.diag(self.accuracy_matrix), k=-1)
-        return 1 - abs(min(np.sum(bwt_matrix) * 2 / (self.n * (self.n-1)), 0))
+        return 1 - abs(min(self._backward_transfer(), 0))
 
     def all_metrics(self):
         return dict(
             accuracy=self.accuracy(),
             forward_transfer=self.forward_transfer(),
-            backward_transfer_pos=self.backward_transfer(),
+            backward_transfer_pos=self.backward_transfer_pos(),
             remembering=self.remembering())
 
 
