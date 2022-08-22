@@ -166,6 +166,34 @@ def get_args():
         type=str,
         default=None,
         help='load the vision network model')
+    parser.add_argument(
+        '--network-size',
+        nargs='+',
+        type=int,
+        default=None,
+        help='List of widths of each hidden layer in the policy network. If given, overrides --network-width and '
+             '--network-depth. Currently customizable network size is only implemented for PPO and HNPPO. '
+        # TODO make available to other algos
+    )
+
+    parser.add_argument(
+        '--network-width',
+        type=int,
+        default=64,
+        help='Width of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 64)'
+    )
+    parser.add_argument(
+        '--network-depth',
+        type=int,
+        default=2,
+        help='Number of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 2)'
+    )
+    parser.add_argument(
+        '--te-dim',
+        type=int,
+        default=8,
+        help='Hypernetwork task embedding dimension'
+    )
 
     args = parser.parse_args()
 
@@ -259,7 +287,6 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--world-path',
         type=str,
-        required=True,
         help='Folder containing the world files')
     parser.add_argument(
         '--pos-control',
@@ -276,31 +303,3 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=None,
         help='task id for continual learning')
-    parser.add_argument(
-        '--network-size',
-        nargs='+',
-        type=int,
-        default=None,
-        help='List of widths of each hidden layer in the policy network. If given, overrides --network-width and '
-             '--network-depth. Currently customizable network size is only implemented for PPO and HNPPO. '
-        # TODO make available to other algos
-    )
-
-    parser.add_argument(
-        '--network-width',
-        type=int,
-        default=64,
-        help='Width of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 64)'
-    )
-    parser.add_argument(
-        '--network-depth',
-        type=int,
-        default=2,
-        help='Number of hidden layers. Currently customizable network size is only implemented for PPO and HNPPO. (default: 2)'
-    )
-    parser.add_argument(
-        '--te-dim',
-        type=int,
-        default=8,
-        help='Hypernetwork task embedding dimension'
-    )
