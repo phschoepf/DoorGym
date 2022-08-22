@@ -92,7 +92,7 @@ series2_hnppo_pull_0:
     algo: hnppo
     num-processes: 8
     lr: 0.005
-    clip-param: 0.35
+    clip-param: 0.3
     max-grad-norm: 1e-4
     task-id: 0
     num-env-steps: 12000000
@@ -108,7 +108,7 @@ series2_hnppo_pull_left_1:
     algo: hnppo
     num-processes: 8
     lr: 0.005
-    clip-param: 0.35
+    clip-param: 0.3
     max-grad-norm: 1e-4
     task-id: 1
     num-env-steps: 12000000
@@ -124,7 +124,7 @@ series2_hnppo_lever_2:
     algo: hnppo
     num-processes: 8
     lr: 0.005
-    clip-param: 0.35
+    clip-param: 0.3
     max-grad-norm: 1e-4
     task-id: 2
     num-env-steps: 12000000
@@ -140,7 +140,7 @@ series2_hnppo_lever_left_3:
     algo: hnppo
     num-processes: 8
     lr: 0.005
-    clip-param: 0.35
+    clip-param: 0.3
     max-grad-norm: 1e-4
     task-id: 3
     num-env-steps: 12000000
