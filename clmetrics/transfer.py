@@ -1,46 +1,28 @@
+import argparse
+import json
 import os
-import re
+import yaml
 
 import numpy as np
 import DoorGym.enjoy as enjoy
-from DoorGym.a2c_ppo_acktr.arguments import get_args_enjoy
+from DoorGym.a2c_ppo_acktr.arguments import add_common_args
 
 
-def parse_loadname(load_name: str):
-    """
-    Find all folders with a given prefix, and returns information about their experiment.
+def make_accuracy_matrix(config):
+    """Make the accuracy matrix of a given run. The accuracy matrix is an NxN array for N tasks trained on the hnet.
+    amatrix[A,B] is the accuracy of task B, evaluated on the network after training on task A."""
 
-    Returns:
-        list of tuples (full_folderpath, correspondig_world_name, task_id) for all experiments with the given prefix
-    """
-    folderpat = re.compile(r'.*?-task([0-9])-([a-z]+).*?')
-    info = []
-    dirname, prefix = os.path.split(load_name)
-    for folder in os.listdir(dirname):
-        if folder.startswith(prefix):
-            full_path = os.path.join(dirname, folder)
-            m = re.match(folderpat, folder)
-            tid = int(m.group(1))
-            worldname = m.group(2) + "_blue_gripper"
-            info.append((full_path, worldname, tid))
-    return info
+    experiments, worlds = zip(*[(os.path.join(os.path.expanduser(config['checkpoint_root']), run['checkpoint']),
+                                 os.path.join(os.path.expanduser(config['world_root']), run['world']))
+                                for run in config['runs']])
 
-
-def make_accuracy_matrix():
-    args = get_args_enjoy()
-
-    experiments = parse_loadname(args.load_name)
+    assert len(experiments) == len(worlds), "Number of experiments and world paths has to be the same"
     accuracy_mat = np.zeros((len(experiments), len(experiments)))
-    for folder, world, train_tid in sorted(experiments, key=lambda e: e[2]):
-        # iterate over checkpoint files
-        checkpoint_to_load = os.path.join(folder,
-                                          sorted(os.listdir(folder))[-1])  # get the latest checkpoint from the folder
 
-        for eval_tid in range(len(experiments)):
-            # iterate over tasks
-
-            # load the world corresponding to this task
-            world_to_load = os.path.join(args.world_path, experiments[eval_tid][1])
+    # iterate over checkpoint files
+    for train_tid, checkpoint in enumerate(experiments):
+        # iterate over tasks
+        for eval_tid, world in enumerate(worlds):
 
             # we can't give tids higher than the train_tid to enjoy.py, thus we clip it to the highest tid for all other tasks
             # evaluating on not-yet-trained tasks can reveal zero-shot capabilities
@@ -49,15 +31,14 @@ def make_accuracy_matrix():
             env_kwargs = dict(port=args.port,
                               visionnet_input=args.visionnet_input,
                               unity=args.unity,
-                              world_path=world_to_load)
+                              world_path=world)
 
-            print(
-                f'evaluating task {eval_tid} on checkpoint of task {train_tid} (world {world_to_load.split("/")[-1]})')
+            print(f'evaluating task {eval_tid} on checkpoint of task {train_tid} (world {os.path.basename(world)})')
             opening_rate, opening_timeavg, episode_rewards_avg = enjoy.onpolicy_inference(
                 seed=args.seed,
                 env_name=args.env_name,
                 det=True,
-                load_name=checkpoint_to_load,
+                load_name=checkpoint,
                 evaluation=True,
                 render=False,
                 knob_noisy=args.knob_noisy,
@@ -117,13 +98,30 @@ class CLMetric:
 
 if __name__ == "__main__":
     # Usage example:
-    # python3 clmetrics/transfer.py --env-name doorenv-v0 --world-path ~/Desktop/schoepf-bachelor-thesis/DoorGym/world_generator/world  --load-name trained_models/hnppo/doorenv-v0_ppo-hn7
-    accmatrix = make_accuracy_matrix()
+    # python3 clmetrics/transfer.py --config clmetrics/template_config.yml
+    parser = argparse.ArgumentParser()
+    add_common_args(parser)
+    parser.add_argument(
+        '-c', '--config',
+        type=str,
+        help='config YAML: contains list of checkpoints and worlds')
+    parser.add_argument(
+        '-m', '--matrix',
+        type=str,
+        help='precalculated accuracy matrix')
+    args = parser.parse_args()
 
-    # for debug purposes
-    testmatrix = np.array([[1.0, 0.5, 0.0],
-                           [1.0, 0.9, 0.1],
-                           [0.6, 0.7, 0.5]]
-                          )
+    # if matrix is given, just print the CL metrics
+    if args.matrix:
+        with open(args.matrix) as mf:
+            accmatrix = np.array(json.load(mf))
+
+    # if not, calculate the matrix (slow!) and save it for later
+    else:
+        with open(args.config) as cf:
+            accmatrix = make_accuracy_matrix(config=yaml.safe_load(cf))
+        with open(args.config.replace("config.yml", "accuracy_matrix.json"), mode='w') as mf:
+            print(f'writing matrix to {mf.name}')
+            json.dump(accmatrix.tolist(), mf)
 
     print(CLMetric(accmatrix))

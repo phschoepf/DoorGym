@@ -1,0 +1,8 @@
+# An example config file for the transfer.py metric script
+checkpoint_root: ~/path/to/trained/models/
+world_root: ~/path/to/worlds/
+runs:
+  - checkpoint: model1/pull.100.pt
+    world: pull_blue_floatinghook
+  - checkpoint: model2/pull_left.100.pt
+    world: pull_blue_floatinghook_left_fixed
