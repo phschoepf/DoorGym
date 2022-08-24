@@ -128,8 +128,8 @@ series2_hnppo_lever_2:
     max-grad-norm: 1e-4
     task-id: 2
     num-env-steps: 12000000
-    beta: 5e-3
-    save-name: hnppo-pull
+    beta: 2e-3
+    save-name: hnppo-lever
     world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
   flags-dest: args
 
@@ -144,7 +144,7 @@ series2_hnppo_lever_left_3:
     max-grad-norm: 1e-4
     task-id: 3
     num-env-steps: 12000000
-    beta: 5e-3
-    save-name: hnppo-pull
+    beta: 2e-3
+    save-name: hnppo-lever_left
     world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_left/
   flags-dest: args

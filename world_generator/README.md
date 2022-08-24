@@ -47,6 +47,7 @@ This mjcf generator is powered by the following repo.
 | pull_blue_floatinggripper_left       | pull      | floatinggripper | left    | ppo-hn<x>, x=9..10, guild optimizations              ||
 | pull_blue_floatinggripper_left_fixed | pull      | floatinggripper | left    | ppo-hn11, guild optimizations                        | moved handle further inward to avoid frame collision |
 | pull_blue_floatinghook               | pull      | floatinghook    |         | ppo-hn<x>, x=1..4                                    ||
+| pull_blue_floatinghook_left_fixed    | pull      | floatinghook    | left    | guild hnppo series2                                  | moved handle further inward                          |
 | pull_blue_gripper                    | pull      | gripper         |         | ppo-hn<x>, x=5..8                                    ||
 | round_blue_floatinggripper           | round     | floatinggripper |         | ppo-hn<x>, x=9..10, guild optimizations              ||
 | round_blue_floatinggripper_easy      | round     | floatinggripper |         | ppo-hn11                                             | decrease spring and damping force on handle          |
