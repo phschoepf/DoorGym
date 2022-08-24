@@ -1,0 +1,12 @@
+# second run of series2 with beta=0.001 on all runs
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: 935006404c3846f995a45db6a94c4577/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.185.pt
+    world: pull_blue_floatinghook
+  - checkpoint: d788a5af24954a70ba795db669e96576/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.165.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: ed78fd87ec5540d38b7f9ad2b013704c/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.120.pt
+    world: lever_blue_floatinghook
+  - checkpoint: 146261705e2d48959cb9b4b6f6152539/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.120.pt # highest opening rate, declines afterwards (experiment goes up to 360)
+    world: lever_blue_floatinghook_left

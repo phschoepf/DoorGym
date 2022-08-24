@@ -5,5 +5,7 @@ runs:
     world: pull_blue_floatinghook
   - checkpoint: 640d6ee1d8b44703a61fceb7901a909c/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.205.pt
     world: pull_blue_floatinghook_left_fixed
-  - checkpoint: c710b1acf5844704bc0cc02703395fd7/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.365.pt
+  - checkpoint: 8956a6e8855a4b8ea2eb4d4b16280d1c/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.360.pt # this checkpoint is misnamed, should be hnppo-lever
     world: lever_blue_floatinghook
+  - checkpoint: b89db3e6c1f44ca9bf40f369b57b54af/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.200.pt # not the last checkpoint, instead the one with highest episode reward
+    world: lever_blue_floatinghook_left
