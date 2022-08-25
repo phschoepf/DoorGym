@@ -6,7 +6,7 @@ import yaml
 import numpy as np
 import DoorGym.enjoy as enjoy
 from DoorGym.a2c_ppo_acktr.arguments import add_common_args
-from DoorGym.main import set_seed
+from DoorGym.deterministic import set_seed
 
 def make_accuracy_matrix(config):
     """Make the accuracy matrix of a given run. The accuracy matrix is an NxN array for N tasks trained on the hnet.

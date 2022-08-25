@@ -16,6 +16,7 @@ from tensorboardX import SummaryWriter
 from trained_visionmodel.visionmodel import VisionModelXYZ
 from enjoy import onpolicy_inference, offpolicy_inference
 from util import add_vision_noise, add_joint_noise,load_visionmodel, prepare_trainer, prepare_env
+from deterministic import set_seed
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.arguments import get_args
@@ -41,22 +42,6 @@ logger = logging.getLogger()
 
 ### DEBUG ###
 # torch.autograd.set_detect_anomaly(True)
-
-def set_seed(seed: int, cuda_deterministic=False):
-    """
-    Sets the seed for reproducability
-    """
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
-        if cuda_deterministic:
-            torch.backends.cudnn.benchmark = False
-            torch.backends.cudnn.deterministic = True
 
 
 def onpolicy_main():

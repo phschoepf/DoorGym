@@ -6,6 +6,7 @@ from tqdm import tqdm
 import argparse
 import os
 import json
+from DoorGym.deterministic import set_seed
 
 
 def main(dataset_file):
@@ -782,7 +783,10 @@ if __name__ == '__main__':
     parser.add_argument('--output-name-extention', type=str, default="", help='folder name under world path')
     parser.add_argument('--pulldoor-ratio', type=float, default=1.0, help='ratio of door that opens by pulling.')
     parser.add_argument('--righthinge-ratio', type=float, default=1.0, help='ratio of door that has hinge on right side.')
+    parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
     args = parser.parse_args()
+
+    set_seed(args.seed, cuda_deterministic=False)
 
     # Generate the ordered knob if argument for "knob_type"
     if args.knob_type:
