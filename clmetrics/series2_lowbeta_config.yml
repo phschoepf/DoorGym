@@ -10,3 +10,4 @@ runs:
     world: lever_blue_floatinghook
   - checkpoint: 146261705e2d48959cb9b4b6f6152539/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.120.pt # highest opening rate, declines afterwards (experiment goes up to 360)
     world: lever_blue_floatinghook_left
+seed: 1000

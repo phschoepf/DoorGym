@@ -6,7 +6,7 @@ import yaml
 import numpy as np
 import DoorGym.enjoy as enjoy
 from DoorGym.a2c_ppo_acktr.arguments import add_common_args
-
+from DoorGym.main import set_seed
 
 def make_accuracy_matrix(config):
     """Make the accuracy matrix of a given run. The accuracy matrix is an NxN array for N tasks trained on the hnet.
@@ -122,7 +122,9 @@ if __name__ == "__main__":
     # if not, calculate the matrix (slow!) and save it for later
     else:
         with open(args.config) as cf:
-            accmatrix = make_accuracy_matrix(config=yaml.safe_load(cf))
+            config = yaml.safe_load(cf)
+            set_seed(config['seed'], cuda_deterministic=True)
+            accmatrix = make_accuracy_matrix(config)
         with open(args.config.replace("config.yml", "accuracy_matrix.json"), mode='w') as mf:
             print(f'writing matrix to {mf.name}')
             json.dump(accmatrix.tolist(), mf)

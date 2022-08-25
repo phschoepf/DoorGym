@@ -9,3 +9,4 @@ runs:
     world: lever_blue_floatinghook
   - checkpoint: b89db3e6c1f44ca9bf40f369b57b54af/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.200.pt # not the last checkpoint, instead the one with highest episode reward
     world: lever_blue_floatinghook_left
+seed: 1000

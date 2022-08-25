@@ -42,21 +42,16 @@ logger = logging.getLogger()
 ### DEBUG ###
 # torch.autograd.set_detect_anomaly(True)
 
-def set_seed(seed=1000, cuda_deterministic=False):
+def set_seed(seed: int, cuda_deterministic=False):
     """
     Sets the seed for reproducability
-
-    Args:
-        seed (int, optional): Input seed. Defaults to 1000.
     """
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    cuda_available = args.cuda and torch.cuda.is_available()
-
-    if cuda_available:
+    if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
         if cuda_deterministic:
