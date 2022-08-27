@@ -49,7 +49,9 @@ def make_accuracy_matrix(config):
                 pos_control=args.pos_control,
                 step_skip=args.step_skip,
                 task_id=tid_to_evaluate)
-            accuracy_mat[train_tid, eval_tid] = opening_rate
+            accuracy_mat[train_tid, eval_tid] = np.clip(opening_rate / 100, a_min=0, a_max=1)
+            # Doorgym opening rate is in percent, convert it to a ratio. Also, clip to [0,1] because sometimes the
+            # reported opening rate will be something like 101%, which is a bug due to asynchronous calls to mujoco
 
     return accuracy_mat
 
