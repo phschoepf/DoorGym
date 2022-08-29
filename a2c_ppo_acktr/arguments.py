@@ -194,6 +194,12 @@ def get_args():
         default=8,
         help='Hypernetwork task embedding dimension'
     )
+    parser.add_argument(
+        '--freshcritic',
+        type=bool,
+        default=True,
+        help='Whether to use fresh critic (non-HN) or HN-based critic network. Default is freshcritic, i.e. True'
+    )
 
     args = parser.parse_args()
 

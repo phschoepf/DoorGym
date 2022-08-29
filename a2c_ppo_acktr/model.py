@@ -236,7 +236,7 @@ class MLPBase(NNBase):
 
 
 class HNBase(NNBase):
-    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=[64, 64], te_dim=8):
+    def __init__(self, num_inputs, action_space, hnet:HyperNetwork, recurrent=False, hidden_size=[64, 64], te_dim=8, freshcritic=True):
         """
         Args:
             num_inputs: Number of input (env observations)
@@ -244,6 +244,7 @@ class HNBase(NNBase):
             hnet: Class of hypernet to use. Must be a subclass of "HyperNetwork". Currently only HN or ChunkedHN.
             recurrent: Always false for HN
             hidden_size: Hidden units per layer in the target network.
+            freshcritic: If true, critic network is a plain MLP and trained from scratch for each task. If false, critic network is also governed by hnet.
         """
         super(HNBase, self).__init__(recurrent, num_inputs, hidden_size)
 
@@ -251,7 +252,10 @@ class HNBase(NNBase):
             num_inputs = hidden_size[0]
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.freshcritic = freshcritic
+        print(f'Using freshcritic: {freshcritic}')
         self.output_dims_a = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=hidden_size[-1], hidden_layers=hidden_size[:-1])
+        self.output_dims_c = TargetNetwork.weight_shapes(n_in=num_inputs, n_out=1, hidden_layers=hidden_size)
         num_outputs = action_space.shape[0]
         self.output_dims_dist = [[num_outputs, self.output_size], [num_outputs], [num_outputs]]
 
@@ -265,6 +269,8 @@ class HNBase(NNBase):
             'ce_dim': 5,
             'device': device
         }
+        if not self.freshcritic:
+            hparams['target_shapes'] += self.output_dims_c
 
         if hnet == HyperNetwork:
             self.hnet = hnet(
@@ -295,8 +301,21 @@ class HNBase(NNBase):
                          out_fn=torch.nn.Tanh(),
                          device=device)
 
-        # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
-        self.critic = nn.Sequential(*gen_layers(num_inputs, hidden_size), init_(nn.Linear(hidden_size[-1], 1)))
+        if self.freshcritic:
+            # critic is just a normal nn.Sequential, only used for training (copied from MLPBase)
+            self.critic = nn.Sequential(*gen_layers(num_inputs, hidden_size), init_(nn.Linear(hidden_size[-1], 1)))
+
+        else:
+            self.critic = TargetNetwork(
+                n_in=num_inputs,
+                n_out=1,
+                hidden_layers=hidden_size,
+                no_weights=True,
+                bn_track_stats=False,
+                activation_fn=torch.nn.Tanh(),
+                out_fn=None,
+                device=device)
+
         # dist was also moved here from policy so we can populate it with weights from the HN
         self.dist = FunctionalDiagGaussian(self.output_size, num_outputs)
 
@@ -332,8 +351,14 @@ class HNBase(NNBase):
     def forward(self, inputs, rnn_hxs, masks):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
         generated_weights = self.hnet(self.active_task)
-        self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
-        self.dist.set_weights(generated_weights[len(self.output_dims_a):])
+
+        if self.freshcritic:
+            self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
+            self.dist.set_weights(generated_weights[len(self.output_dims_a):])
+        else:
+            self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
+            self.dist.set_weights(generated_weights[len(self.output_dims_a):len(self.output_dims_a) + len(self.output_dims_dist)])
+            self.critic.set_weights(generated_weights[len(self.output_dims_a) + len(self.output_dims_dist):])
 
         hidden_critic = self.critic(inputs)
         hidden_actor, _ = self.actor(inputs)
