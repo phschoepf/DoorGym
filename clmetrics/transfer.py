@@ -17,6 +17,11 @@ def make_accuracy_matrix(config):
                                 for run in config['runs']])
 
     assert len(experiments) == len(worlds), "Number of experiments and world paths has to be the same"
+    for file in experiments:
+        assert os.path.isfile(file), f'Checkpoint {os.path.basename(file)} does not exist'
+    for dir_ in worlds:
+        assert os.path.isdir(dir_) and len(os.listdir(dir_)) != 0, f'World folder {os.path.basename(dir_)} does not exist or is empty'
+
     accuracy_mat = np.zeros((len(experiments), len(experiments)))
 
     # iterate over checkpoint files
@@ -57,11 +62,8 @@ def make_accuracy_matrix(config):
 
 
 class CLMetric:
-    def __init__(self, amatrix: np.ndarray = None):
-        if amatrix is None:
-            self.accuracy_matrix = make_accuracy_matrix()
-        else:
-            self.accuracy_matrix = amatrix
+    def __init__(self, amatrix: np.ndarray):
+        self.accuracy_matrix = amatrix
         self.n = self.accuracy_matrix.shape[0]
 
     def __call__(self, *args, **kwargs):

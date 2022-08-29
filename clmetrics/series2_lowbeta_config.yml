@@ -10,4 +10,6 @@ runs:
     world: lever_blue_floatinghook
   - checkpoint: 146261705e2d48959cb9b4b6f6152539/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.700.pt # experiment was run for 24M steps
     world: lever_blue_floatinghook_left
+  - checkpoint: cb74d12bac7d40528571bce39021150e/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.80.pt # best opening rate, after that decline
+    world: lever_blue_floatinghook_push
 seed: 1000

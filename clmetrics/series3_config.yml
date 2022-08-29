@@ -1,0 +1,12 @@
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: d1afae8a57cd4103a39492bbdf4c35ab/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.100.pt
+    world: pull_blue_floatinghook
+  - checkpoint: c6c999067db34d1da7895a3a7eca9792/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.40.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: de6b95530f6041d9a6c7f1ab2dcedfe9/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.365.pt
+    world: lever_blue_floatinghook
+  - checkpoint: 8a902800a6f84a8c8e90b22f542d167f/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.365.pt
+    world: lever_blue_floatinghook_left
+seed: 1000
