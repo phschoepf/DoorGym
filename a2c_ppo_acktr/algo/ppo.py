@@ -145,7 +145,9 @@ class HNPPO():
             self.targets = None
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
-        self.nonreg_optimizer = optim.Adam(self.actor_critic.base.critic.parameters(), lr=lr, eps=eps)
+        if self.actor_critic.base.freshcritic:
+            # only initialize the nonreg_optimizer if freshcritic is used - otherwise it doesn't have any params to optimize
+            self.nonreg_optimizer = optim.Adam(self.actor_critic.base.critic.parameters(), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
 
     def update(self, rollouts):
@@ -192,7 +194,10 @@ class HNPPO():
                 value_loss = 0.5 * F.mse_loss(return_batch, values_pred)
 
                 self.theta_optimizer.zero_grad()
-                self.nonreg_optimizer.zero_grad()
+                try:
+                    self.nonreg_optimizer.zero_grad()
+                except AttributeError:
+                    pass
                 self.emb_optimizer.zero_grad()
 
                 loss = (value_loss * self.value_loss_coef + action_loss -
@@ -230,7 +235,10 @@ class HNPPO():
 
                 # Update the hnet params using the current task loss and the regularization loss
                 self.theta_optimizer.step()
-                self.nonreg_optimizer.step()
+                try:
+                    self.nonreg_optimizer.step()
+                except AttributeError:
+                    pass
 
                 if i%64== 0:
                     logger.info(f'epoch {e}, step {i}: loss =  {loss}')
