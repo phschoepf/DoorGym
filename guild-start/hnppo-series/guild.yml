@@ -297,3 +297,39 @@ series4_hnppo_lever_left_3:
     seed: 1
     cuda-deterministic: True
   flags-dest: args
+
+series4_hnppo_lever_push_4:
+  main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    num-processes: 8
+    lr: 0.005
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+    task-id: 4
+    num-env-steps: 12000000
+    beta: 1e-3
+    save-name: hnppo-lever_push
+    world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_push/
+    seed: 1
+    cuda-deterministic: True
+  flags-dest: args
+
+series4_hnppo_lever_push_left_5:
+  main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    num-processes: 8
+    lr: 0.005
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+    task-id: 5
+    num-env-steps: 12000000
+    beta: 1e-3
+    save-name: hnppo-lever_push_left
+    world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_push_left/
+    seed: 1
+    cuda-deterministic: True
+  flags-dest: args
