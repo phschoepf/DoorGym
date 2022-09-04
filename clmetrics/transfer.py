@@ -1,13 +1,14 @@
 import argparse
-import json
 import os
+import sqlite3
 import yaml
 
 import numpy as np
 import DoorGym.enjoy as enjoy
 from DoorGym.a2c_ppo_acktr.arguments import add_common_args
 from DoorGym.deterministic import set_seed
-from datetime import datetime
+
+from continuousworld import run_eval
 
 def make_accuracy_matrix(config):
     """Make the accuracy matrix of a given run. The accuracy matrix is an NxN array for N tasks trained on the hnet.
@@ -33,31 +34,10 @@ def make_accuracy_matrix(config):
             # we can't give tids higher than the train_tid to enjoy.py, thus we clip it to the highest tid for all other tasks
             # evaluating on not-yet-trained tasks can reveal zero-shot capabilities
             tid_to_evaluate = min(train_tid, eval_tid)
-
-            env_kwargs = dict(port=args.port,
-                              visionnet_input=args.visionnet_input,
-                              unity=args.unity,
-                              world_path=world)
-
             print(f'evaluating task {eval_tid} on checkpoint of task {train_tid} (world {os.path.basename(world)})')
-            opening_rate, opening_timeavg, episode_rewards_avg = enjoy.onpolicy_inference(
-                seed=args.seed,
-                env_name=args.env_name,
-                det=True,
-                load_name=checkpoint,
-                evaluation=True,
-                render=False,
-                knob_noisy=args.knob_noisy,
-                visionnet_input=args.visionnet_input,
-                env_kwargs=env_kwargs,
-                actor_critic=None,
-                verbose=False,
-                pos_control=args.pos_control,
-                step_skip=args.step_skip,
-                task_id=tid_to_evaluate)
-            accuracy_mat[train_tid, eval_tid] = np.clip(opening_rate / 100, a_min=0, a_max=1)
-            # Doorgym opening rate is in percent, convert it to a ratio. Also, clip to [0,1] because sometimes the
-            # reported opening rate will be something like 101%, which is a bug due to asynchronous calls to mujoco
+
+            opening_rate = run_eval(checkpoint, world, tid_to_evaluate, db_connection, args)
+            accuracy_mat[train_tid, eval_tid] = opening_rate
 
     return accuracy_mat
 
@@ -113,26 +93,14 @@ if __name__ == "__main__":
         '-c', '--config',
         type=str,
         help='config YAML: contains list of checkpoints and worlds')
-    parser.add_argument(
-        '-m', '--matrix',
-        type=str,
-        help='precalculated accuracy matrix')
     args = parser.parse_args()
 
-    # if matrix is given, just print the CL metrics
-    if args.matrix:
-        with open(args.matrix) as mf:
-            accmatrix = np.array(json.load(mf))
+    db_connection = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'eval_results.sqlite'),
+                                    detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 
-    # if not, calculate the matrix (slow!) and save it for later
-    else:
-        with open(args.config) as cf:
-            config = yaml.safe_load(cf)
-            set_seed(config['seed'], cuda_deterministic=True)
-            accmatrix = np.array([[0,1], [2,3]])#make_accuracy_matrix(config)
-        with open(args.config.replace("config.yml", "accuracy_matrix.json"), mode='w') as mf:
-            print(f'writing matrix to {mf.name}')
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-            json.dump({"timestamp": timestamp, "matrix": accmatrix.tolist()}, mf)
-
+    with open(args.config) as cf:
+        config = yaml.safe_load(cf)
+        set_seed(config['seed'], cuda_deterministic=True)
+        accmatrix = make_accuracy_matrix(config)
+    print(accmatrix, "\n")
     print(CLMetric(accmatrix))

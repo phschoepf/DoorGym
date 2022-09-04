@@ -5,6 +5,7 @@ import math
 import numpy as np
 import os
 import re
+import sqlite3
 import yaml
 
 from dataclasses import dataclass
@@ -46,31 +47,48 @@ def get_all_checkpoints(base_dir, maxiter=None) -> Dict[int, str]:
     return d
 
 
-def run_eval(checkpoint, world, task_id):
-    if MOCK:
-        return int(np.random.uniform(0, 100))
-    env_kwargs = dict(port=args.port,
-                      visionnet_input=args.visionnet_input,
-                      unity=args.unity,
-                      world_path=world)
+def run_eval(checkpoint, world, task_id, db_connection: sqlite3.Connection, args: argparse.Namespace):
+    # Check DB for preexiting value, reuse if it exists
+    cur = db_connection.cursor()
+    res = cur.execute("SELECT opening_rate FROM evals WHERE checkpoint = ? AND world = ? AND task_id = ?",
+                      (checkpoint, world, task_id))
+    opening_rate = res.fetchone()
+    if opening_rate is not None:
+        logger.info(f"using cached opening rate for {os.path.basename(checkpoint)}")
+        return opening_rate[0]
 
-    opening_rate, opening_timeavg, episode_rewards_avg = enjoy.onpolicy_inference(
-        seed=args.seed,
-        env_name=args.env_name,
-        det=True,
-        load_name=checkpoint,
-        evaluation=True,
-        render=False,
-        knob_noisy=args.knob_noisy,
-        visionnet_input=args.visionnet_input,
-        env_kwargs=env_kwargs,
-        actor_critic=None,
-        verbose=False,
-        pos_control=args.pos_control,
-        step_skip=args.step_skip,
-        task_id=task_id)
-    logger.debug(json.dumps({"checkpoint": checkpoint, "world": world, "task_id": task_id, "opening_rate": opening_rate}))
-    return opening_rate
+    # if value does not exist, run evaluation and save in DB
+    else:
+        env_kwargs = dict(port=args.port,
+                          visionnet_input=args.visionnet_input,
+                          unity=args.unity,
+                          world_path=world)
+
+        opening_rate, opening_timeavg, episode_rewards_avg = enjoy.onpolicy_inference(
+            seed=args.seed,
+            env_name=args.env_name,
+            det=True,
+            load_name=checkpoint,
+            evaluation=True,
+            render=False,
+            knob_noisy=args.knob_noisy,
+            visionnet_input=args.visionnet_input,
+            env_kwargs=env_kwargs,
+            actor_critic=None,
+            verbose=False,
+            pos_control=args.pos_control,
+            step_skip=args.step_skip,
+            task_id=task_id)
+        opening_rate_normalized = np.clip(opening_rate / 100, a_min=0, a_max=1)
+        # Doorgym opening rate is in percent, convert it to a ratio. Also, clip to [0,1] because sometimes the
+        # reported opening rate will be something like 101%, which is a bug due to asynchronous calls to mujoco
+
+        timestamp = datetime.now()
+        cur.execute("INSERT INTO evals(checkpoint, world, task_id, opening_rate, opening_timeavg, episode_rewards_avg, ts) "
+                    "VALUES(?, ?, ?, ?, ?, ?, ?)",
+                    (checkpoint, world, task_id, opening_rate_normalized, opening_timeavg, float(episode_rewards_avg), timestamp))
+        db_connection.commit()
+        return opening_rate_normalized
 
 
 @dataclass
@@ -80,7 +98,7 @@ class CLTimepoint:
 
 
 class CLSeries:
-    def __init__(self, config):
+    def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
         # cl runs (hnppo with previous learned tasks)
         cl_checkpoint_folders = [os.path.join(config['checkpoint_root'], os.path.dirname(run['checkpoint']))
                                  for run in config['runs']]
@@ -91,9 +109,9 @@ class CLSeries:
 
         # reference runs (hnppo with fresh networks)
         try:
-            ref_checkpoint_folders = [os.path.join(config['checkpoint_root'], os.path.dirname(run['checkpoint']))
-                                      for run in config['reference_runs']]
-            ref_highest_iters = [get_iternum(run['checkpoint']) for run in config['reference_runs']]
+            ref_checkpoint_folders = [os.path.join(config['checkpoint_root'], os.path.dirname(run['ref_checkpoint']))
+                                      for run in config['runs']]
+            ref_highest_iters = [get_iternum(run['ref_checkpoint']) for run in config['runs']]
             self.reference_checkpoints = [get_all_checkpoints(checkpoint_folder, maxiter=highest)
                                           for checkpoint_folder, highest in zip(ref_checkpoint_folders, ref_highest_iters)]
             assert len(self.cl_checkpoints) == len(self.reference_checkpoints)
@@ -103,6 +121,8 @@ class CLSeries:
 
         self.worlds = [os.path.join(os.path.expanduser(config['world_root']), run['world'])
                        for run in config['runs']]
+        self.db = db
+        self.args = doorgym_args
 
     def avg_performance(self, t: CLTimepoint):
         """Average success rate of all tasks at time t. The latest task id is used for tasks that have not
@@ -115,8 +135,8 @@ class CLSeries:
             tid_to_evaluate = min(t.task_id, eval_tid)
 
             logger.info(f'AVG: evaluating task {eval_tid} on checkpoint of task {t.task_id} (world {os.path.basename(world)})')
-            opening_rate = run_eval(checkpoint, world, tid_to_evaluate)
-            accuracies.append(np.clip(opening_rate / 100, a_min=0, a_max=1))
+            opening_rate = run_eval(checkpoint, world, tid_to_evaluate, self.db, self.args)
+            accuracies.append(opening_rate)
         return np.mean(accuracies)
 
     def forward_transfer(self):
@@ -124,8 +144,8 @@ class CLSeries:
             accuracies = []
             for checkpoint in checkpoints:
                 logger.info(f'FT: evaluating task {task_id} on checkpoint {os.path.basename(checkpoint)} (world {os.path.basename(self.worlds[task_id])})')
-                opening_rate = run_eval(checkpoint, self.worlds[task_id], task_id)
-                accuracies.append(np.clip(opening_rate / 100, a_min=0, a_max=1))
+                opening_rate = run_eval(checkpoint, self.worlds[task_id], task_id, self.db, self.args)
+                accuracies.append(opening_rate)
             return np.mean(accuracies)
 
         if self.reference_checkpoints is None:
@@ -147,14 +167,13 @@ class CLSeries:
         for task_id in range(len(self.cl_checkpoints)):
             last_chp_task = self.cl_checkpoints[task_id][max(self.cl_checkpoints[task_id])]
             logger.info(f'Forgetting: evaluating task {task_id} on checkpoint after training (world {os.path.basename(self.worlds[task_id])})')
-            after_training = run_eval(last_chp_task, self.worlds[task_id], task_id)
+            after_training = run_eval(last_chp_task, self.worlds[task_id], task_id, self.db, self.args)
 
             last_chp_total = self.cl_checkpoints[-1][max(self.cl_checkpoints[-1])]
             logger.info(f'Forgetting: evaluating task {task_id} on final checkpoint (world {os.path.basename(self.worlds[task_id])})')
-            at_end = run_eval(last_chp_total, self.worlds[task_id], task_id)
+            at_end = run_eval(last_chp_total, self.worlds[task_id], task_id, self.db, self.args)
 
-            task_forgettings.append(np.clip(after_training / 100, a_min=0, a_max=1) -
-                                    np.clip(at_end / 100, a_min=0, a_max=1))
+            task_forgettings.append(after_training - at_end)
         logger.debug(f'Task-wise forgetting: {task_forgettings}')
         return np.mean(task_forgettings)
 
@@ -173,7 +192,6 @@ class CLSeries:
 
 
 if __name__ == "__main__":
-    MOCK = False  # for debugging, mocks the actual evaluation with a random opening rate
     # Usage example:
     # python3 clmetrics/continuousworld.py --config clmetrics/template_config.yml
     parser = argparse.ArgumentParser()
@@ -189,11 +207,13 @@ if __name__ == "__main__":
                         format='%(asctime)s %(levelname)s %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.DEBUG)
+    db_connection = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'eval_results.sqlite'),
+                                    detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 
     with open(args.config) as cf:
         config = yaml.safe_load(cf)
         set_seed(config['seed'], cuda_deterministic=True)
-        series = CLSeries(config)
+        series = CLSeries(config, db_connection, args)
 
     res = series.all_metrics()
     #print(series.all_metrics(t=CLTimepoint(task_id=0, checkpoint=20)))
