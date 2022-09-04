@@ -18,7 +18,7 @@ from DoorGym.deterministic import set_seed
 
 """https://arxiv.org/pdf/2105.10919.pdf, Section 4.1"""
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 def get_iternum(chp):
     """get the iteration number from checkpoint path"""
@@ -69,7 +69,7 @@ def run_eval(checkpoint, world, task_id):
         pos_control=args.pos_control,
         step_skip=args.step_skip,
         task_id=task_id)
-    logging.debug(json.dumps({"checkpoint": checkpoint, "world": world, "task_id": task_id, "opening_rate": opening_rate}))
+    logger.debug(json.dumps({"checkpoint": checkpoint, "world": world, "task_id": task_id, "opening_rate": opening_rate}))
     return opening_rate
 
 
@@ -114,7 +114,7 @@ class CLSeries:
         for eval_tid, world in enumerate(self.worlds):
             tid_to_evaluate = min(t.task_id, eval_tid)
 
-            print(f'AVG: evaluating task {eval_tid} on checkpoint of task {t.task_id} (world {os.path.basename(world)})')
+            logger.info(f'AVG: evaluating task {eval_tid} on checkpoint of task {t.task_id} (world {os.path.basename(world)})')
             opening_rate = run_eval(checkpoint, world, tid_to_evaluate)
             accuracies.append(np.clip(opening_rate / 100, a_min=0, a_max=1))
         return np.mean(accuracies)
@@ -123,14 +123,14 @@ class CLSeries:
         def _get_auc(checkpoints, task_id):
             accuracies = []
             for checkpoint in checkpoints:
-                print(f'FT: evaluating task {task_id} on checkpoint {os.path.basename(checkpoint)} (world {os.path.basename(self.worlds[task_id])})')
+                logger.info(f'FT: evaluating task {task_id} on checkpoint {os.path.basename(checkpoint)} (world {os.path.basename(self.worlds[task_id])})')
                 opening_rate = run_eval(checkpoint, self.worlds[task_id], task_id)
                 accuracies.append(np.clip(opening_rate / 100, a_min=0, a_max=1))
             return np.mean(accuracies)
 
         if self.reference_checkpoints is None:
-            logging.warning('Forward transfer was skipped, no reference runs given')
-            return -1
+            logger.warning('Forward transfer was skipped, no reference runs given')
+            return None
         task_fts = []
         # Task-wise forward transfers
         for task_id in range(len(self.cl_checkpoints)):
@@ -138,7 +138,7 @@ class CLSeries:
             ref_auc = _get_auc(self.reference_checkpoints[task_id].values(), task_id)
 
             task_fts.append((cl_auc-ref_auc) / (1-ref_auc))
-        logging.debug(f'Task-wise forward transfers: {task_fts}')
+        logger.debug(f'Task-wise forward transfers: {task_fts}')
         return np.mean(task_fts)
 
     def forgetting(self):
@@ -146,15 +146,16 @@ class CLSeries:
         # Task-wise forgetting metric
         for task_id in range(len(self.cl_checkpoints)):
             last_chp_task = self.cl_checkpoints[task_id][max(self.cl_checkpoints[task_id])]
-            last_chp_total = self.cl_checkpoints[-1][max(self.cl_checkpoints[-1])]
-            print(f'Forgetting: evaluating task {task_id} on checkpoint after training (world {os.path.basename(self.worlds[task_id])})')
+            logger.info(f'Forgetting: evaluating task {task_id} on checkpoint after training (world {os.path.basename(self.worlds[task_id])})')
             after_training = run_eval(last_chp_task, self.worlds[task_id], task_id)
-            print(f'Forgetting: evaluating task {task_id} on final checkpoint (world {os.path.basename(self.worlds[task_id])})')
+
+            last_chp_total = self.cl_checkpoints[-1][max(self.cl_checkpoints[-1])]
+            logger.info(f'Forgetting: evaluating task {task_id} on final checkpoint (world {os.path.basename(self.worlds[task_id])})')
             at_end = run_eval(last_chp_total, self.worlds[task_id], task_id)
 
             task_forgettings.append(np.clip(after_training / 100, a_min=0, a_max=1) -
                                     np.clip(at_end / 100, a_min=0, a_max=1))
-        logging.debug(f'Task-wise forgetting: {task_forgettings}')
+        logger.debug(f'Task-wise forgetting: {task_forgettings}')
         return np.mean(task_forgettings)
 
     def all_metrics(self, t: CLTimepoint = None):
@@ -172,9 +173,9 @@ class CLSeries:
 
 
 if __name__ == "__main__":
-    MOCK = True
+    MOCK = False  # for debugging, mocks the actual evaluation with a random opening rate
     # Usage example:
-    # python3 clmetrics/transfer.py --config clmetrics/template_config.yml
+    # python3 clmetrics/continuousworld.py --config clmetrics/template_config.yml
     parser = argparse.ArgumentParser()
     add_common_args(parser)
     parser.add_argument(
@@ -183,10 +184,18 @@ if __name__ == "__main__":
         help='config YAML: contains list of checkpoints and worlds')
     args = parser.parse_args()
 
+    logging.basicConfig(filename=os.path.join(os.path.dirname(__file__), 'log', os.path.splitext(os.path.basename(args.config))[0]+'.log'),
+                        filemode='w',
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.DEBUG)
+
     with open(args.config) as cf:
         config = yaml.safe_load(cf)
         set_seed(config['seed'], cuda_deterministic=True)
         series = CLSeries(config)
 
-    print(series.all_metrics())
+    res = series.all_metrics()
     #print(series.all_metrics(t=CLTimepoint(task_id=0, checkpoint=20)))
+    logger.info(res)
+    print(res)
