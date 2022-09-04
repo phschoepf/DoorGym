@@ -105,7 +105,8 @@ def onpolicy_main():
                          'action_space': envs.action_space,
                          'hnet': HyperNetwork if args.algo == "hnppo" else ChunkedHyperNetwork if args.algo == "chnppo" else None,
                          'hidden_size': args.network_size,
-                         'te_dim': args.te_dim})
+                         'te_dim': args.te_dim,
+                         'freshcritic': args.freshcritic})
     
     if visionnet_input: 
             visionmodel = load_visionmodel(args.save_name, args.visionmodel_path, VisionModelXYZ())  
