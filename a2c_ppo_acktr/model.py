@@ -352,7 +352,8 @@ class HNBase(NNBase):
         # generate weights for both networks, as a list, then split the list to populate the networks' parameters
         generated_weights = self.hnet(self.active_task)
 
-        if self.freshcritic:
+        # hasattr is for backward compatibility where freshcritic was implicitly true (there was no non-freshcritic)
+        if not hasattr(self, 'freshcritic') or self.freshcritic:
             self.actor.set_weights(generated_weights[:len(self.output_dims_a)])
             self.dist.set_weights(generated_weights[len(self.output_dims_a):])
         else:
