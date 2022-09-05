@@ -1,0 +1,68 @@
+- config: ppo-vanilla-common
+  flags:
+    env-name: doorenv-v0
+    algo: ppo
+    num-processes: 8
+    clip-param: 0.2
+    max-grad-norm: 0.5
+    lr: 1e-3
+    entropy-coef: 0.0
+    num-env-steps: 12000000
+    cuda-deterministic: True
+
+#########series7: Vanilla PPO baseline##########
+- operations:
+    series7_ppo_pull_0:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-pull
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinghook/
+        seed: 1
+      flags-dest: args
+
+    series7_ppo_pull_left_1:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-pull_left
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinghook_left_fixed/
+        seed: 1
+      flags-dest: args
+
+    series7_ppo_lever_2:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-lever
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook/
+        seed: 1
+      flags-dest: args
+
+    series7_ppo_lever_left_3:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-lever_left
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_left/
+        seed: 1
+      flags-dest: args
+
+    series7_ppo_lever_push_4:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-lever_push
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_push/
+        seed: 1
+      flags-dest: args
+
+    series7_ppo_lever_push_left_5:
+      main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+      flags:
+        $include: ppo-vanilla-common
+        save-name: ppo-lever_push_left
+        world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/lever_blue_floatinghook_push_left/
+        seed: 1
+      flags-dest: args
+
