@@ -152,7 +152,7 @@ class CWMetrics(CLSeries):
     def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
         super().__init__(config, db, doorgym_args)
 
-    def avg_performance(self, t: CLTimepoint):
+    def avg_performance(self, t: CLTimepoint, **kwargs):
         """Average success rate of all tasks at time t. The latest task id is used for tasks that have not
         been trained at this point."""
 
@@ -165,7 +165,13 @@ class CWMetrics(CLSeries):
             accuracies.append(opening_rate)
         return np.mean(accuracies)
 
-    def forward_transfer(self):
+    def forward_transfer(self, ignore_missing_ref=False, **kwargs):
+        """Forward transfer of the learning curve. Compares AUC of the CL learning curve with the reference method.
+
+        Args:
+            ignore_missing_ref: Continue even if the reference runs are missing/incomplete. Will not
+              return a valid forward transfer metric, but already evaluates all possible runs and caches
+              them to speed up re-computation once all runs are ready."""
         def _get_auc(checkpoints, task_id):
             accuracies = []
             for checkpoint in checkpoints:
@@ -175,6 +181,10 @@ class CWMetrics(CLSeries):
 
         if self.reference_checkpoints is None:
             logger.warning('Forward transfer was skipped, no reference runs given')
+            if ignore_missing_ref:
+                for task_id in range(len(self.cl_checkpoints)):
+                    logger.warning(f'evaluating forward transfer in caching-only mode: task {task_id}')
+                    _ = _get_auc(self.cl_checkpoints[task_id].values(), task_id)
             return None
         task_fts = []
         # Task-wise forward transfers
@@ -202,14 +212,14 @@ class CWMetrics(CLSeries):
         logger.debug(f'Task-wise forgetting: {task_forgettings}')
         return np.mean(task_forgettings)
 
-    def all_metrics(self, t: CLTimepoint = None):
+    def all_metrics(self, **kwargs):
         # default is last checkpoint of last task
-        if t is None:
-            t = CLTimepoint(task_id=len(self.cl_checkpoints)-1,
-                            checkpoint=max(self.cl_checkpoints[-1]))
+        if kwargs.get('t') is None:
+            kwargs['t'] = CLTimepoint(task_id=len(self.cl_checkpoints)-1,
+                                      checkpoint=max(self.cl_checkpoints[-1]))
         return dict(
-            avg_performance=self.avg_performance(t),
-            forward_transfer=self.forward_transfer(),
+            avg_performance=self.avg_performance(**kwargs),
+            forward_transfer=self.forward_transfer(**kwargs),
             forgetting=self.forgetting())
 
 
