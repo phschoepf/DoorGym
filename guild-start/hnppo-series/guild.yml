@@ -241,8 +241,23 @@ series3_hnppo_lever_left_3:
 
 ######series 4: back to higher beta but with determinism ###########
 series4_hnppo_pull_0:
-  main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
   # will reuse this run from series3 since beta has no effect for first run
+  main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
+  flags:
+    env-name: doorenv-v0
+    algo: hnppo
+    num-processes: 8
+    lr: 0.005
+    clip-param: 0.3
+    max-grad-norm: 1e-4
+    task-id: 0
+    num-env-steps: 12000000
+    beta: 1e-3
+    save-name: hnppo-pull
+    world-path: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/world_generator/world/pull_blue_floatinghook/
+    seed: 1
+    cuda-deterministic: True
+  flags-dest: args
 
 series4_hnppo_pull_left_1:
   main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
