@@ -1,0 +1,17 @@
+#hnppo w/ freshcritic, seed 27182
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: b671948b2bf54674b4998143f4366263/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.100.pt
+    world: pull_blue_floatinghook
+  - checkpoint: 4de2fa9162564c90b8f59d341396e964/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.300.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: 08792b9e0125475491d9928f61979334/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.260.pt
+    world: lever_blue_floatinghook
+  - checkpoint: 2ab59e9736c34a0dacbd0d985ec3606d
+    world: lever_blue_floatinghook_left
+  - checkpoint:
+    world: lever_blue_floatinghook_push
+  - checkpoint:
+    world: lever_blue_floatinghook_push_left
+seed: 1000

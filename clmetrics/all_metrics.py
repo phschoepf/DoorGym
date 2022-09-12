@@ -283,6 +283,22 @@ class MTFMetrics(CLSeries):
             remembering=self.remembering())
 
 
+class CLTimelinePlot(CLSeries):
+    """Generate evaluations for the timeline plot. Does not output anything, just rus the necessary evals and
+    stores them in the DB."""
+    def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
+        super().__init__(config, db, doorgym_args)
+
+    def run_evals(self, chp_skip=1):
+        for task_id, world in enumerate(self.worlds):
+            for chp_dict in self.cl_checkpoints[task_id:]:
+                total_step = 0
+                for chp in chp_dict.values():
+                    if total_step % chp_skip == 0:
+                        self.run_eval(chp, world, task_id)
+                    total_step += 1
+
+
 if __name__ == "__main__":
     # Usage example:
     # python3 clmetrics/all_metrics.py --config clmetrics/template_config.yml
@@ -306,7 +322,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(cf)
         set_seed(config['seed'], cuda_deterministic=True)
 
-    logger.info('Calculating MTF metrics....')
+    """logger.info('Calculating MTF metrics....')
     mtf = MTFMetrics(config, db_connection, args)
     mtf_res = mtf.all_metrics()
     logger.info(mtf_res)
@@ -314,8 +330,11 @@ if __name__ == "__main__":
 
     logger.info('Calculating CW metrics....')
     cw = CWMetrics(config, db_connection, args)
-    cw_res = cw.all_metrics()
+    cw_res = cw.all_metrics(ignore_missing_ref=True)
     logger.info(cw_res)
-    print('CW metrics:', cw_res)
+    print('CW metrics:', cw_res)"""
+
+    clplot_eval_runner = CLTimelinePlot(config, db_connection, args)
+    clplot_eval_runner.run_evals(chp_skip=4)
 
     #print(series.all_metrics(t=CLTimepoint(task_id=0, checkpoint=20)))

@@ -1,0 +1,17 @@
+# Checkpoints from series8:"CL" series with just PPO finetuning (will work badly, lower baseline)
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: 896b2d3b5edd4f5dbbb1e10441d6328d/trained_models/ppo/doorenv-v0_ppo-pull/ppo-pull.120.pt
+    world: pull_blue_floatinghook
+  - checkpoint: 9db980b1434b4a8fbcaf5c7c95bd8330/trained_models/ppo/doorenv-v0_ppo-pull_left/ppo-pull_left.120.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: 885557cc5be3467c8cf57412c9eacb05
+    world: lever_blue_floatinghook
+  - checkpoint:
+    world: lever_blue_floatinghook_left
+  - checkpoint:
+    world: lever_blue_floatinghook_push
+  - checkpoint:
+    world: lever_blue_floatinghook_push_left
+seed: 1000

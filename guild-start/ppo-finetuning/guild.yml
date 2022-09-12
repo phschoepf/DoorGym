@@ -10,9 +10,10 @@
     num-env-steps: 12000000
     cuda-deterministic: True
 
-#########series7: Vanilla PPO baseline##########
+#########series8: PPO finetuning##########
 - operations:
-    series7_ppo_pull_0:
+    series8_ppo_pull_0:
+      #copied from series7
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common
@@ -21,7 +22,7 @@
         seed: 1
       flags-dest: args
 
-    series7_ppo_pull_left_1:
+    series8_ppo_pull_left_1:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common
@@ -30,7 +31,7 @@
         seed: 1
       flags-dest: args
 
-    series7_ppo_lever_2:
+    series8_ppo_lever_2:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common
@@ -39,7 +40,7 @@
         seed: 1
       flags-dest: args
 
-    series7_ppo_lever_left_3:
+    series8_ppo_lever_left_3:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common
@@ -48,7 +49,7 @@
         seed: 1
       flags-dest: args
 
-    series7_ppo_lever_push_4:
+    series8_ppo_lever_push_4:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common
@@ -58,7 +59,7 @@
         num-env-steps: 24000000
       flags-dest: args
 
-    series7_ppo_lever_push_left_5:
+    series8_ppo_lever_push_left_5:
       main: /home/philemon.schoepf/schoepf-bachelor-thesis/DoorGym/main
       flags:
         $include: ppo-vanilla-common

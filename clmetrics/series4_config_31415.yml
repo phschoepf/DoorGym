@@ -1,0 +1,17 @@
+#hnppo w/ freshcritic, seed 31415
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: f188b15af4534ecfa036465767e2942b/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.100.pt
+    world: pull_blue_floatinghook
+  - checkpoint: e71ded2f738541b7a71df05eb9c02116/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.135.pt # performed better than late checkpoint in lever task
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: a5f6790cdc374ef79de907bf19a1093b/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.365.pt # only 14% opening rate but yeah...
+    world: lever_blue_floatinghook
+  - checkpoint: a4c50732be5c48e587c6595a0e95c58b/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.365.pt # no opening
+    world: lever_blue_floatinghook_left
+  - checkpoint: 2267b32d1c324ff29c2103f601bf8bbc
+    world: lever_blue_floatinghook_push
+  - checkpoint:
+    world: lever_blue_floatinghook_push_left
+seed: 1000
