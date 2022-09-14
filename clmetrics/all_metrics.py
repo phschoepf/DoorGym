@@ -99,6 +99,8 @@ class CLSeries:
             door opening success rate [0,1]"""
 
         args = self.args
+        if args.ignore_tid:
+            task_id = -1  # in the DB, nonexistent task ids are -1
         logger.info(f'evaluating {os.path.basename(checkpoint)} on world {os.path.basename(world)} with tid {task_id}')
 
         # Check DB for preexiting value, reuse if it exists
@@ -131,7 +133,7 @@ class CLSeries:
                 verbose=False,
                 pos_control=args.pos_control,
                 step_skip=args.step_skip,
-                task_id=task_id)
+                task_id=None if args.ignore_tid else task_id)
             opening_rate_normalized = np.clip(opening_rate / 100, a_min=0, a_max=1)
             # Doorgym opening rate is in percent, convert it to a ratio. Also, clip to [0,1] because sometimes the
             # reported opening rate will be something like 101%, which is a bug due to asynchronous calls to mujoco
@@ -299,6 +301,24 @@ class CLTimelinePlot(CLSeries):
                     total_step += 1
 
 
+class PPObaseline(CLSeries):
+    """Generate evaluations for the timeline plot. Does not output anything, just rus the necessary evals and
+    stores them in the DB.
+
+    Same as CLTimelinePlot, but only runs in-domain worlds."""
+    def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
+        super().__init__(config, db, doorgym_args)
+
+    def run_evals(self, chp_skip=1):
+        for task_id, world in enumerate(self.worlds):
+            chp_dict = self.cl_checkpoints[task_id]
+            total_step = 0
+            for chp in chp_dict.values():
+                if total_step % chp_skip == 0:
+                    self.run_eval(chp, world, task_id)
+                total_step += 1
+
+
 if __name__ == "__main__":
     # Usage example:
     # python3 clmetrics/all_metrics.py --config clmetrics/template_config.yml
@@ -308,6 +328,7 @@ if __name__ == "__main__":
         '-c', '--config',
         type=str,
         help='config YAML: contains list of checkpoints and worlds')
+    parser.add_argument('--ignore-tid', action="store_true", default=False)  # set tid in all evals to None, useful for vanilla PPO eval
     args = parser.parse_args()
 
     logging.basicConfig(filename=os.path.join(os.path.dirname(__file__), 'log', os.path.splitext(os.path.basename(args.config))[0]+'.log'),
@@ -334,7 +355,7 @@ if __name__ == "__main__":
     logger.info(cw_res)
     print('CW metrics:', cw_res)"""
 
-    clplot_eval_runner = CLTimelinePlot(config, db_connection, args)
+    clplot_eval_runner = PPObaseline(config, db_connection, args)
     clplot_eval_runner.run_evals(chp_skip=4)
 
     #print(series.all_metrics(t=CLTimepoint(task_id=0, checkpoint=20)))

@@ -1,0 +1,17 @@
+# Checkpoints from series7: PPO vanilla
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: 01047ec5bf014fa08a15823a34703645/trained_models/ppo/doorenv-v0_ppo-pull/ppo-pull.80.pt
+    world: pull_blue_floatinghook
+  - checkpoint: 0f84eb846ec5425588117f0261af6e35/trained_models/ppo/doorenv-v0_ppo-pull_left/ppo-pull_left.60.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: 2aabae2c64554892b26db5c7789f6528/trained_models/ppo/doorenv-v0_ppo-lever/ppo-lever.365.pt
+    world: lever_blue_floatinghook
+  - checkpoint: afb39543d0a540b0946bb7016bf39a5c/trained_models/ppo/doorenv-v0_ppo-lever_left/ppo-lever_left.280.pt
+    world: lever_blue_floatinghook_left
+  - checkpoint: 97ae0d2c084149b3ac0f0edd6609097c/trained_models/ppo/doorenv-v0_ppo-lever_push/ppo-lever_push.160.pt
+    world: lever_blue_floatinghook_push
+  - checkpoint: f811d8b5938c4e94a7e3cc0ff2d671f8/trained_models/ppo/doorenv-v0_ppo-lever_push_left/ppo-lever_push_left.280.pt
+    world: lever_blue_floatinghook_push_left
+seed: 1000
