@@ -145,7 +145,7 @@ class HNPPO():
             self.targets = None
 
         self.theta_optimizer = optim.Adam(list(self.hnet.theta), lr=lr, eps=eps)
-        if self.actor_critic.base.freshcritic:
+        if not hasattr(self.actor_critic.base, 'freshcritic') or self.actor_critic.base.freshcritic:
             # only initialize the nonreg_optimizer if freshcritic is used - otherwise it doesn't have any params to optimize
             self.nonreg_optimizer = optim.Adam(self.actor_critic.base.critic.parameters(), lr=lr, eps=eps)
         self.emb_optimizer = optim.Adam([self.hnet.get_task_emb(self.task_id)], lr=lr, eps=eps)
