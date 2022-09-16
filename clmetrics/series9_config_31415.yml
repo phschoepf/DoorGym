@@ -1,0 +1,17 @@
+# Regularizer ablation study: hnppo-freshcritic without reg
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: f188b15af4534ecfa036465767e2942b/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.100.pt
+    world: pull_blue_floatinghook
+  - checkpoint: b3bf8c3df8044fbc9fb17039e80c551d/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.180.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: 78f6084cad344d80914c45d906ae25b6/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.360.pt
+    world: lever_blue_floatinghook
+  #- checkpoint: a3ae4845
+  #  world: lever_blue_floatinghook_left
+  #- checkpoint:
+  #  world: lever_blue_floatinghook_push
+  #- checkpoint:
+  #  world: lever_blue_floatinghook_push_left
+seed: 1000
