@@ -10,8 +10,8 @@ runs:
     world: lever_blue_floatinghook
   - checkpoint: d6a623c5338b448484deb9868d9c3938/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.280.pt
     world: lever_blue_floatinghook_left
-  #- checkpoint: b2db47ab
-  #  world: lever_blue_floatinghook_push
-  #- checkpoint:
-  #  world: lever_blue_floatinghook_push_left
+  - checkpoint: b2db47ab611f4e819a35df8cbd1fc2d1/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.300.pt
+    world: lever_blue_floatinghook_push
+  - checkpoint: f796fd60fa08440385c5c956f4e9db65/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.720.pt
+    world: lever_blue_floatinghook_push_left
 seed: 1000

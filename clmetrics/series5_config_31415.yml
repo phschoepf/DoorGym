@@ -1,0 +1,16 @@
+# Checkpoints from series5: fresh critic hnppo
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: 0f35ca582d4c4265886ae2109987f481/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.60.pt
+    world: pull_blue_floatinghook
+  - checkpoint: f966d79233d1469f98b9117900b40709/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.100.pt
+    world: pull_blue_floatinghook_left_fixed
+  #- checkpoint: a52c29fc
+  #  world: lever_blue_floatinghook
+  #- checkpoint:
+  #  world: lever_blue_floatinghook_left
+  #- checkpoint:
+  #  world: lever_blue_floatinghook_push
+  #- checkpoint:
+  #  world: lever_blue_floatinghook_push_left

@@ -12,6 +12,6 @@ runs:
     world: lever_blue_floatinghook_left
   - checkpoint: e6f583f2f4f34f6aa854acd22fa7e4a5/trained_models/ppo/doorenv-v0_ppo-lever_push/ppo-lever_push.340.pt
     world: lever_blue_floatinghook_push
-  #- checkpoint: bc4aafca
-  #  world: lever_blue_floatinghook_push_left
+  - checkpoint: bc4aafca10d244e78733232de4db4851/trained_models/ppo/doorenv-v0_ppo-lever_push_left/ppo-lever_push_left.720.pt
+    world: lever_blue_floatinghook_push_left
 seed: 1000
