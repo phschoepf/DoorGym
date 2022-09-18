@@ -305,7 +305,8 @@ class PPObaseline(CLSeries):
     """Generate evaluations for the timeline plot. Does not output anything, just rus the necessary evals and
     stores them in the DB.
 
-    Same as CLTimelinePlot, but only runs in-domain worlds."""
+    Same as CLTimelinePlot, but only runs in-domain worlds.
+    For series7."""
     def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
         super().__init__(config, db, doorgym_args)
 
@@ -319,6 +320,22 @@ class PPObaseline(CLSeries):
                 total_step += 1
 
 
+class HNPPOfreshBaseline(CLSeries):
+    """Same as PPObaseline, changed parameters (e.g. tid=0 instead of none, use ref checkpoints from series5).
+    For series6."""
+    def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
+        super().__init__(config, db, doorgym_args)
+
+    def run_evals(self, chp_skip=1):
+        for task_id, world in enumerate(self.worlds):
+            chp_dict = self.reference_checkpoints[task_id]
+            total_step = 0
+            for chp in chp_dict.values():
+                if total_step % chp_skip == 0:
+                    self.run_eval(chp, world, task_id=0)
+                total_step += 1
+
+
 if __name__ == "__main__":
     # Usage example:
     # python3 clmetrics/all_metrics.py --config clmetrics/template_config.yml
@@ -328,7 +345,20 @@ if __name__ == "__main__":
         '-c', '--config',
         type=str,
         help='config YAML: contains list of checkpoints and worlds')
-    parser.add_argument('--ignore-tid', action="store_true", default=False)  # set tid in all evals to None, useful for vanilla PPO eval
+    parser.add_argument(
+        '--ignore-tid',
+        action="store_true",
+        default=False)  # set tid in all evals to None, useful for vanilla PPO eval
+    parser.add_argument(
+        '-o', '--operation',
+        type=str,
+        choices=['cl_timeseries', 'base_ppo', 'base_hnppo', 'cw', 'mtf'])
+    parser.add_argument(
+        '--chp-skip',
+        type=int,
+        default=1,
+        help='evaluate every X checkpoints found (default:1, i.e. every checkpoint). ' \
+             'Only effective with cl_timeseries and base_timeseries op.')
     args = parser.parse_args()
 
     logging.basicConfig(filename=os.path.join(os.path.dirname(__file__), 'log', os.path.splitext(os.path.basename(args.config))[0]+'.log'),
@@ -343,19 +373,29 @@ if __name__ == "__main__":
         config = yaml.safe_load(cf)
         set_seed(config['seed'], cuda_deterministic=True)
 
-    """logger.info('Calculating MTF metrics....')
-    mtf = MTFMetrics(config, db_connection, args)
-    mtf_res = mtf.all_metrics()
-    logger.info(mtf_res)
-    print('MTF metrics:', mtf_res)
-
-    logger.info('Calculating CW metrics....')
-    cw = CWMetrics(config, db_connection, args)
-    cw_res = cw.all_metrics(ignore_missing_ref=True)
-    logger.info(cw_res)
-    print('CW metrics:', cw_res)"""
-
-    clplot_eval_runner = PPObaseline(config, db_connection, args)
-    clplot_eval_runner.run_evals(chp_skip=4)
+    if args.operation == 'mtf':
+        logger.info('Calculating MTF metrics....')
+        mtf = MTFMetrics(config, db_connection, args)
+        print(mtf.accuracy_matrix.tolist())
+        mtf_res = mtf.all_metrics()
+        logger.info(mtf_res)
+        print('MTF metrics:', mtf_res)
+    elif args.operation == 'cw':
+        logger.info('Calculating CW metrics....')
+        cw = CWMetrics(config, db_connection, args)
+        cw_res = cw.all_metrics(ignore_missing_ref=True)
+        logger.info(cw_res)
+        print('CW metrics:', cw_res)
+    elif args.operation == 'cl_timeseries':
+        clplot_eval_runner = CLTimelinePlot(config, db_connection, args)
+        clplot_eval_runner.run_evals(chp_skip=args.chp_skip)
+    elif args.operation == 'base_ppo':
+        clplot_eval_runner = PPObaseline(config, db_connection, args)
+        clplot_eval_runner.run_evals(chp_skip=args.chp_skip)
+    elif args.operation == 'base_hnppo':
+        clplot_eval_runner = HNPPOfreshBaseline(config, db_connection, args)
+        clplot_eval_runner.run_evals(chp_skip=args.chp_skip)
+    else:
+        raise NotImplementedError("Unknown operation " + args.operation)
 
     #print(series.all_metrics(t=CLTimepoint(task_id=0, checkpoint=20)))
