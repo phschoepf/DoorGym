@@ -75,14 +75,6 @@ class CLSeries:
                 # Reference checkpoints are only needed for forward transfer metric, so not giving them is fine for the rest
                 logger.warning(f'Missing reference checkpoints for {run.get("world")}')
 
-        # Sanity check if all reference dirs exist and checkpoint numbers (=dict keys) are the same. Otherwise this
-        # will produce inaccurate forward transfer metric.
-        if not (
-                len(self.cl_checkpoints) == len(self.reference_checkpoints) and
-                all(cl.keys() == ref.keys() for cl, ref in zip(self.cl_checkpoints, self.reference_checkpoints))
-        ):
-            self.reference_checkpoints = None
-
         self.worlds = [os.path.join(os.path.expanduser(config['world_root']), run['world'])
                        for run in config['runs']]
         self.db = db
@@ -153,6 +145,13 @@ class CWMetrics(CLSeries):
 
     def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
         super().__init__(config, db, doorgym_args)
+        # Sanity check if all reference dirs exist and checkpoint numbers (=dict keys) are the same. Otherwise this
+        # will produce inaccurate forward transfer metric.
+        if not (
+                len(self.cl_checkpoints) == len(self.reference_checkpoints) and
+                all(cl.keys() == ref.keys() for cl, ref in zip(self.cl_checkpoints, self.reference_checkpoints))
+        ):
+            self.reference_checkpoints = None
 
     def avg_performance(self, t: CLTimepoint, **kwargs):
         """Average success rate of all tasks at time t. The latest task id is used for tasks that have not
