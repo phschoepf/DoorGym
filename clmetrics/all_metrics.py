@@ -60,10 +60,15 @@ class CLSeries:
         self.cl_checkpoints = []
         self.reference_checkpoints = []
         for run in config['runs']:
-            cl_folder = os.path.join(config['checkpoint_root'], os.path.dirname(run['checkpoint']))
-            cl_highest_iter = get_iternum(run['checkpoint'])
-            cl_checkpoint_dict = get_all_checkpoints(cl_folder, maxiter=cl_highest_iter)
-            self.cl_checkpoints.append(cl_checkpoint_dict)
+            try:
+                cl_folder = os.path.join(config['checkpoint_root'], os.path.dirname(run['checkpoint']))
+                cl_highest_iter = get_iternum(run['checkpoint'])
+                cl_checkpoint_dict = get_all_checkpoints(cl_folder, maxiter=cl_highest_iter)
+                self.cl_checkpoints.append(cl_checkpoint_dict)
+            except KeyError:
+                # Reference checkpoints are only needed for forward transfer metric, so not giving them is fine for the rest
+                logger.warning(f'Missing cl checkpoints for {run.get("world")}')
+                self.cl_checkpoints.append(dict())
 
             try:
                 ref_folder = os.path.join(config['checkpoint_root'], os.path.dirname(run['ref_checkpoint']))
@@ -74,6 +79,7 @@ class CLSeries:
             except KeyError:
                 # Reference checkpoints are only needed for forward transfer metric, so not giving them is fine for the rest
                 logger.warning(f'Missing reference checkpoints for {run.get("world")}')
+                self.reference_checkpoints.append(dict())
 
         self.worlds = [os.path.join(os.path.expanduser(config['world_root']), run['world'])
                        for run in config['runs']]
