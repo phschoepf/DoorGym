@@ -1,0 +1,17 @@
+# Checkpoints from series6: fresh critic hnppo
+checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
+world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
+runs:
+  - checkpoint: 0f35ca582d4c4265886ae2109987f481/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.60.pt
+    world: pull_blue_floatinghook
+  - checkpoint: 764114a31a864ed684f695dc88d5b605/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.100.pt
+    world: pull_blue_floatinghook_left_fixed
+  - checkpoint: a308f1eee54242b6933c499bad9d647a/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.360.pt
+    world: lever_blue_floatinghook
+  - checkpoint: 1e55ce3be95e41418e7fcf0025023ed0/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.360.pt
+    world: lever_blue_floatinghook_left
+  - checkpoint: 0a17b6ff249c40a2839391c3778a5908/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.720.pt
+    world: lever_blue_floatinghook_push
+  - checkpoint: 7594b0cedb574a1e9d95e25fa2eaab09/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.720.pt
+    world: lever_blue_floatinghook_push_left
+seed: 1000

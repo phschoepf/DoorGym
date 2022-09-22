@@ -16,7 +16,7 @@ runs:
     ref_checkpoint: d7ac311902ca41e0a093ff86093499f3/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.340.pt
     world: lever_blue_floatinghook_left
   - checkpoint: 21d66fe7677348e2b9a5065d6ba53c85/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.400.pt
-    ref_checkpoint: 7fb8df1415724915ad450f42aa2852c4/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.400.pt
+    ref_checkpoint: 7fb8df1415724915ad450f42aa2852c4/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.720.pt
     world: lever_blue_floatinghook_push
   - checkpoint: 3f088edd8f3f43b29976eb2dc783f094/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.720.pt # no opening
     ref_checkpoint: 2ed503474f4946e1b992616d9078f082/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.720.pt

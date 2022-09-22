@@ -3,14 +3,21 @@ checkpoint_root: ~/miniconda3/envs/doorgym/.guild/runs/
 world_root: ~/schoepf-bachelor-thesis/DoorGym/world_generator/world/
 runs:
   - checkpoint: 0f35ca582d4c4265886ae2109987f481/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.60.pt
+    ref_checkpoint: 0f35ca582d4c4265886ae2109987f481/trained_models/hnppo/doorenv-v0_hnppo-pull/hnppo-pull.60.pt
     world: pull_blue_floatinghook
   - checkpoint: f966d79233d1469f98b9117900b40709/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.100.pt
+    ref_checkpoint: 764114a31a864ed684f695dc88d5b605/trained_models/hnppo/doorenv-v0_hnppo-pull_left/hnppo-pull_left.100.pt
     world: pull_blue_floatinghook_left_fixed
-  #- checkpoint: a52c29fc
-  #  world: lever_blue_floatinghook
-  #- checkpoint:
-  #  world: lever_blue_floatinghook_left
-  #- checkpoint:
-  #  world: lever_blue_floatinghook_push
-  #- checkpoint:
-  #  world: lever_blue_floatinghook_push_left
+  - checkpoint: a52c29fc83c340e3a4764ff40bb12ea7/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.220.pt
+    ref_checkpoint: a308f1eee54242b6933c499bad9d647a/trained_models/hnppo/doorenv-v0_hnppo-lever/hnppo-lever.360.pt
+    world: lever_blue_floatinghook
+  - checkpoint: 623cf22011f148ef9971423e331656f2/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.360.pt
+    ref_checkpoint: 1e55ce3be95e41418e7fcf0025023ed0/trained_models/hnppo/doorenv-v0_hnppo-lever_left/hnppo-lever_left.360.pt
+    world: lever_blue_floatinghook_left
+  - checkpoint: a37e8498e7bb4d1d87e1f94c416a257c/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.720.pt
+    ref_checkpoint: 0a17b6ff249c40a2839391c3778a5908/trained_models/hnppo/doorenv-v0_hnppo-lever_push/hnppo-lever_push.720.pt
+    world: lever_blue_floatinghook_push
+  - checkpoint: 6100665a03af4ab39eb4a0e8cc500d8f/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.80.pt # NaN after 80 epis, but already some opening
+    ref_checkpoint: 7594b0cedb574a1e9d95e25fa2eaab09/trained_models/hnppo/doorenv-v0_hnppo-lever_push_left/hnppo-lever_push_left.720.pt
+    world: lever_blue_floatinghook_push_left
+seed: 1000
