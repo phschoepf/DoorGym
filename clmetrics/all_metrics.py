@@ -151,12 +151,9 @@ class CWMetrics(CLSeries):
 
     def __init__(self, config, db: sqlite3.Connection, doorgym_args: argparse.Namespace):
         super().__init__(config, db, doorgym_args)
-        # Sanity check if all reference dirs exist and checkpoint numbers (=dict keys) are the same. Otherwise this
+        # Sanity check if all reference dirs exist. Otherwise this
         # will produce inaccurate forward transfer metric.
-        if not (
-                len(self.cl_checkpoints) == len(self.reference_checkpoints) and
-                all(cl.keys() == ref.keys() for cl, ref in zip(self.cl_checkpoints, self.reference_checkpoints))
-        ):
+        if not len(self.cl_checkpoints) == len(self.reference_checkpoints):
             self.reference_checkpoints = None
 
     def avg_performance(self, t: CLTimepoint, **kwargs):
@@ -197,8 +194,9 @@ class CWMetrics(CLSeries):
         # Task-wise forward transfers
         for task_id in range(len(self.cl_checkpoints)):
             logger.info(f'evaluating forward transfer: task {task_id}')
-            cl_auc = _get_auc(self.cl_checkpoints[task_id].values(), task_id)
-            ref_auc = _get_auc(self.reference_checkpoints[task_id].values(), task_id=0)
+            max_iter = min(max(self.cl_checkpoints[task_id]), max(self.reference_checkpoints[task_id]))
+            cl_auc = _get_auc([v for k, v in self.cl_checkpoints[task_id].items() if k <= max_iter], task_id)
+            ref_auc = _get_auc([v for k, v in self.reference_checkpoints[task_id].items() if k <= max_iter], task_id=0)
 
             task_fts.append((cl_auc-ref_auc) / (1-ref_auc))
         logger.debug(f'Task-wise forward transfers: {task_fts}')
